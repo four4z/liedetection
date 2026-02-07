@@ -28,6 +28,15 @@ function Register({ setMode }: RegisterProps) {
                         <label className="text-sm text-white/70">Email</label>
                         <input
                             type="text"
+                            placeholder="Email"
+                            className="mt-1 w-full rounded-xl bg-white/10 border border-white/20 px-4 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/30"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-sm text-white/70">Username</label>
+                        <input
+                            type="text"
                             placeholder="Username"
                             className="mt-1 w-full rounded-xl bg-white/10 border border-white/20 px-4 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/30"
                         />
@@ -50,11 +59,26 @@ function Register({ setMode }: RegisterProps) {
                         />
                     </div>
 
-                    <button className="w-full rounded-xl bg-dark-secondary py-2 mt-4 text-sm font-medium cursor-pointer hover:bg-dark-secondary-hover transition">
-                        Sign Up
+                </div>
+                <div className="flex items-center gap-3 my-6">
+                    <div className="flex-1 h-px bg-white/20" />
+                    <span className="text-sm text-white/50">SEX</span>
+                    <div className="flex-1 h-px bg-white/20" />
+                </div>
+
+                <div className="flex justify-center gap-2">
+                    <button className=" rounded-full border border-white/20 p-2 text-sm hover:bg-white/10 transition">
+                        <Icon icon="glyphs-poly:male" width="25" height="25" />
+                    </button>
+                    <button className=" rounded-full border border-white/20 p-2 text-sm hover:bg-white/10 transition">
+                        <Icon icon="glyphs-poly:female" width="25" height="25" />
                     </button>
                 </div>
 
+
+                <button className="w-full rounded-xl bg-dark-secondary py-2 mt-8 text-sm font-medium cursor-pointer hover:bg-dark-secondary-hover transition">
+                    Sign Up
+                </button>
 
                 <p className="mt-6 text-center text-sm text-white/60">
                     Already have an account?{" "}
