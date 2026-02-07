@@ -1,5 +1,8 @@
+"use client";
+import React from "react";
 import Image from "next/image";
 import Footer from "./component/Footer";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -13,8 +16,14 @@ export default function Home() {
           <div className="flex justify-between ">
             <div>◉ LieDetect</div>
             <div className="flex gap-4">
-              <button className="cursor-pointer p-2 px-6 rounded-xl duration-300 hover:text-blue-200 ">Sign in</button>
-              <button className="cursor-pointer border-glass-custom bg-glass-custom p-2 px-6 rounded-xl duration-300 hover:text-blue-200 hover:border-blue-200">Sign up</button>
+              {/* <Link href="/authPage">
+                <button className="cursor-pointer p-2 px-6 rounded-xl duration-300 hover:text-blue-200">
+                  Sign in
+                </button>
+              </Link> */}
+              <Link href="/authPage">
+                <button className="cursor-pointer border-glass-custom bg-glass-custom p-2 px-6 rounded-xl duration-300 hover:text-blue-200 hover:border-blue-200">Sign in</button>
+              </Link>
             </div>
           </div>
         </div>

@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { Icon } from "@iconify/react";
-import { motion, AnimatePresence } from "framer-motion";
 
 type RegisterProps = {
     setMode: (mode: "login" | "register") => void;
