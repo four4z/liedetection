@@ -1,0 +1,110 @@
+"use client";
+import React, { useState } from "react";
+import Link from "next/link";
+import { Icon } from "@iconify/react";
+import { usePathname } from "next/navigation";
+
+interface SidebarProps {
+    children?: React.ReactNode;
+}
+
+export default function Sidebar({ children }: SidebarProps) {
+    const [isOpen, setIsOpen] = useState(true);
+    const pathname = usePathname();
+
+    const toggleSidebar = () => {
+        setIsOpen(!isOpen);
+    };
+
+    const menuItems = [
+        {
+            label: "Home",
+            href: "/mainPage",
+            icon: "mdi:home",
+        },
+        {
+            label: "รายการ",
+            href: "/list",
+            icon: "mdi:home",
+        },
+    ];
+
+    const isActive = (href: string) => pathname === href;
+
+    return (
+        <div className="flex h-screen">
+
+            <div
+                className={` shadow-2xl text-white transition-all duration-300 ease-in-out overflow-hidden  flex flex-col ${isOpen ? "w-64" : "w-20"
+                    }`}
+            >
+
+                <div className="flex items-center justify-between p-4 border-b border-greay-custom">
+                    {isOpen && (
+                        <h2 className="text-lg font-bold whitespace-nowrap">LieDetect</h2>
+                    )}
+                    <button
+                        onClick={toggleSidebar}
+                        className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-slate-700 transition-colors duration-200 shrink-0"
+                        title={isOpen ? "Close sidebar" : "Open sidebar"}
+                    >
+                        <Icon
+                            icon={isOpen ? "mdi:chevron-left" : "mdi:chevron-right"}
+                            width="24"
+                            height="24"
+                        />
+                    </button>
+                </div>
+
+                <nav className="flex-1 px-3 py-6 space-y-3">
+                    {menuItems.map((item) => (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={`flex items-center gap-4 px-3 py-3 rounded-lg transition-colors duration-200 ${isActive(item.href)
+                                    ? "bg-greay-custom text-white"
+                                    : "hover:bg-slate-700"
+                                }`}
+                            title={!isOpen ? item.label : ""}
+                        >
+                            <Icon
+                                icon={item.icon}
+                                width="24"
+                                height="24"
+                                className="shrink-0"
+                            />
+                            {isOpen && (
+                                <span className="whitespace-nowrap text-sm font-medium">
+                                    {item.label}
+                                </span>
+                            )}
+                        </Link>
+                    ))}
+                </nav>
+
+                <div className="border-t border-greay-custom p-4">
+                    <button
+                        className="flex items-center gap-4 w-full px-3 py-3 rounded-lg hover:bg-slate-700 transition-colors duration-200"
+                        title={!isOpen ? "Logout" : ""}
+                    >
+                        <Icon
+                            icon="mdi:logout"
+                            width="24"
+                            height="24"
+                            className="shrink-0"
+                        />
+                        {isOpen && (
+                            <span className="whitespace-nowrap text-sm font-medium">
+                                Logout
+                            </span>
+                        )}
+                    </button>
+                </div>
+            </div>
+
+            <div className="flex-1 overflow-auto bg-main-custom">
+                {children}
+            </div>
+        </div>
+    );
+}

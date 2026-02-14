@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #1C1C1C;
+  --background: #1d1d1d;
   --foreground: #FFFFFF;
 }
 
@@ -26,16 +26,28 @@ body {
   .border-dark-custom{
     border-color: #234c6a9a;
   }
+
+  .border-greay-custom {
+    border-color: #2A2A2A;
+  }
+
   .bg-dark-gradient {
     background-image: linear-gradient(175deg,
         rgba(15, 23, 42, 1) 20%,
         rgb(14, 14, 14) 100%);
   }
 
+  .bg-greay-custom {
+    background-color: #222222;
+  }
+
   .bg-dark-gradient-custom {
     background-image: linear-gradient(175deg,
         rgba(15, 23, 42, 1) 30%,
         rgba(23, 23, 23, 1) 100%);
+  }
+  .bg-main-custom {
+    background-color: #1b1b1b;
   }
 
   .bg-glass-custom {
