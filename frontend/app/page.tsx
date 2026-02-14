@@ -40,12 +40,12 @@ export default function Home() {
                 to detect <br/> potential signs of deception.
               </p>
               <div className="hero-actions">
-                <button className="btn-main btn-lg">
+                <Link href="/mainPage" className="btn-main btn-lg">
                   Start Analysis →
-                </button>
-                <button className="btn-primary btn-lg">
-                  Create Account
-                </button>
+                </Link>
+                <Link href="/authPage" className="btn-primary btn-lg">
+                  Access Account
+                </Link>
               </div>
 
               <div className="hero-visual flex justify-center items-center mt-16">

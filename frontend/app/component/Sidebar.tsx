@@ -41,7 +41,7 @@ export default function Sidebar({ children }: SidebarProps) {
 
                 <div className="flex items-center justify-between p-4 border-b border-greay-custom">
                     {isOpen && (
-                        <h2 className="text-lg font-bold whitespace-nowrap">LieDetect</h2>
+                        <Link href="/" className="text-lg font-bold whitespace-nowrap">LieDetect</Link>
                     )}
                     <button
                         onClick={toggleSidebar}

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Icon } from "@iconify/react";
 import Register from "./Register";
-
+import Link from "next/link";
 type AuthMode = "login" | "register";
 
 function Login() {
@@ -13,7 +13,9 @@ function Login() {
         <div className="min-h-screen flex items-center justify-center ">
             {mode === "login" ? (
                 <div className="w-full max-w-sm bg-dark-custom border border-dark-custom rounded-3xl shadow-lg p-12 text-white">
-
+                    <Link href="/" className="flex items-center mb-6">
+                        <Icon icon="weui:back-outlined" width="12" height="24" />
+                    </Link>
                     <div className="flex justify-center mb-6">
                         <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
                             icon
