@@ -1,12 +1,11 @@
 "use client";
 import React from "react";
+import VideoList from "../component/VideoList";
 
 export default function ListPage() {
-
-
     return (
-       <div className=" flex justify-center items-center min-h-screen">
-            order list
-       </div>
+        <div className="p-6">
+            <VideoList />
+        </div>
     );
 }
