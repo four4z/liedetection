@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { mockVideos, VideoItem } from "../data/mockData";
+import Image from "next/image";
 
 interface AnalysisResult {
     isLieDetected: boolean;
@@ -64,14 +65,6 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
         } else {
             router.push(`/video/${videoId}`);
         }
-    };
-
-    const formatFileSize = (bytes: number) => {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
     const formatDate = (dateString: string) => {
@@ -154,6 +147,12 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
                 <h2 className="text-2xl font-bold text-white">รายการวิดีโอ</h2>
                 <span className="text-gray-400 text-sm">ทั้งหมด {videos.length} รายการ</span>
             </div>
+            <div>
+                <input
+                    type="text"
+                    placeholder="ค้นหาวิดีโอ..."
+                    className="w-full p-2 bg-gray-700 text-white rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {videos.map((video) => (
@@ -162,48 +161,32 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
                         onClick={() => handleVideoClick(video.id)}
                         className="bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-700 transition-colors border border-gray-700 hover:border-gray-600"
                     >
-                        <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
-                                <h3 className="text-white font-medium truncate text-sm mb-1">
-                                    {video.originalFilename}
-                                </h3>
-                                <p className="text-gray-400 text-xs">
-                                    {formatDate(video.uploadedAt)}
-                                </p>
-                            </div>
-                            <div className="ml-2">
-                                <Icon icon="mdi:chevron-right" width="20" height="20" className="text-gray-400" />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2 text-xs">
-                            <div className="flex justify-between">
-                                <span className="text-gray-400">ขนาดไฟล์:</span>
-                                <span className="text-white">{formatFileSize(video.fileSize)}</span>
-                            </div>
-
-                            {video.durationSeconds && (
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">ความยาว:</span>
-                                    <span className="text-white">{Math.round(video.durationSeconds)} วินาที</span>
+                                {video.thumbnailUrl ? (
+                                    <Image
+                                        src={video.thumbnailUrl}
+                                        alt="Video Thumbnail"
+                                        width={320}
+                                        height={180}
+                                        className="rounded-md mb-3 object-cover w-full h-40"
+                                    />
+                                ) : (
+                                    <div className="rounded-md mb-3 w-full h-40 bg-red-300 flex items-center justify-center text-gray-400 text-sm">
+                                        No Thumbnail
+                                    </div>
+                                )}
+                                <div className="flex justify-between flex-col" >
+                                    <h3 className="text-white font-medium truncate text-sm mb-1">
+                                        {video.originalFilename}
+                                    </h3>
+                                    <p className="item-end text-gray-400 text-xs">
+                                        {formatDate(video.uploadedAt)}
+                                    </p>
                                 </div>
-                            )}
 
-                            <div className="flex justify-between items-center">
-                                <span className="text-gray-400">สถานะ:</span>
-                                <span className={`font-medium ${getStatusColor(video.analysisResult?.status || 'pending')}`}>
-                                    {getStatusText(video.analysisResult?.status || 'pending')}
-                                </span>
                             </div>
 
-                            {video.analysisResult?.status === 'completed' && (
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-400">ผลการวิเคราะห์:</span>
-                                    <span className={`font-medium ${video.analysisResult.isLieDetected ? 'text-red-400' : 'text-green-400'}`}>
-                                        {video.analysisResult.isLieDetected ? 'ตรวจพบการโกหก' : 'ไม่พบการโกหก'}
-                                    </span>
-                                </div>
-                            )}
                         </div>
                     </div>
                 ))}

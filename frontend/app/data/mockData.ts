@@ -15,6 +15,7 @@ export interface VideoItem {
     isAnonymous: boolean;
     isClaimed: boolean;
     analysisResult?: AnalysisResult;
+    thumbnailUrl?: string;
 }
 
 export const mockVideos: VideoItem[] = [
