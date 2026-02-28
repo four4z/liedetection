@@ -145,7 +145,7 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
         <div className="space-y-4">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-white">รายการวิดีโอ</h2>
-                <span className="text-gray-400 text-sm">ทั้งหมด {videos.length} รายการ</span>
+                
             </div>
             <div>
                 <input
@@ -153,44 +153,58 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
                     placeholder="ค้นหาวิดีโอ..."
                     className="w-full p-2 bg-gray-700 text-white rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <span className="flex  justify-end text-gray-400 text-sm text-end pt-3">ทั้งหมด {videos.length} รายการ</span>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 ">
                 {videos.map((video) => (
                     <div
                         key={video.id}
                         onClick={() => handleVideoClick(video.id)}
-                        className="bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-700 transition-colors border border-gray-700 hover:border-gray-600"
+                        className=" "
                     >
-                        <div className="flex items-start justify-between">
-                            <div className="flex-1 min-w-0">
-                                {video.thumbnailUrl ? (
-                                    <Image
-                                        src={video.thumbnailUrl}
-                                        alt="Video Thumbnail"
-                                        width={320}
-                                        height={180}
-                                        className="rounded-md mb-3 object-cover w-full h-40"
-                                    />
-                                ) : (
-                                    <div className="rounded-md mb-3 w-full h-40 bg-red-300 flex items-center justify-center text-gray-400 text-sm">
-                                        No Thumbnail
-                                    </div>
-                                )}
-                                <div className="flex justify-between flex-col" >
+                        <div className="group relative rounded-lg p-4 cursor-pointer">
+
+                            {/* Background effect */}
+                            <div className="absolute inset-0 
+                                bg-slate-700 rounded-2xl
+                                opacity-0 group-hover:opacity-100
+                                scale-90 group-hover:scale-100
+                                origin-center
+                                transition-transform duration-500 ease-out" />
+
+                            {/* Content */}
+                            <div className="relative z-10">
+                                <div className="relative w-full aspect-video rounded-md overflow-hidden">
+                                    {video.thumbnailUrl ? (
+                                        <Image
+                                            src={video.thumbnailUrl}
+                                            alt="Video Thumbnail"
+                                            fill
+                                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full bg-red-300 flex items-center justify-center text-gray-400 text-sm">
+                                            No Thumbnail
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="w-full pt-3">
                                     <h3 className="text-white font-medium truncate text-sm mb-1">
                                         {video.originalFilename}
                                     </h3>
-                                    <p className="item-end text-gray-400 text-xs">
+                                    <p className="text-gray-400 text-xs">
                                         {formatDate(video.uploadedAt)}
                                     </p>
                                 </div>
 
                             </div>
-
                         </div>
+                        
                     </div>
                 ))}
+                
             </div>
+            
         </div>
     );
 }
