@@ -220,7 +220,7 @@ export default function VideoDetailPage() {
 
                 {/* Right : Log Section */}
                 <div className="w-96 h-125 border border-greay-custom rounded-lg p-3 flex flex-col">
-                    <h3 className="text-lg font-semibold text-white mb-4">Responce Log</h3>
+                    <h3 className="text-lg font-semibold text-white mb-4">Text Log</h3>
                     <div className="overflow-y-auto pr-2 flex-1">
 
 
@@ -243,46 +243,10 @@ export default function VideoDetailPage() {
             {/* Video Information */}
             <div className="grid md:grid-cols-2 gap-6">
                 {/* Basic Information */}
-                <div className="bg-gray-800 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <Icon icon="mdi:information" width="20" height="20" />
-                        ข้อมูลพื้นฐาน
-                    </h3>
-
-                    <div className="space-y-3">
-                        <div className="flex justify-between">
-                            <span className="text-gray-400">ชื่อไฟล์:</span>
-                            <span className="text-white text-right">{video.originalFilename}</span>
-                        </div>
-
-                        <div className="flex justify-between">
-                            <span className="text-gray-400">ขนาดไฟล์:</span>
-                            <span className="text-white">{formatFileSize(video.fileSize)}</span>
-                        </div>
-
-                        {video.durationSeconds && (
-                            <div className="flex justify-between">
-                                <span className="text-gray-400">ความยาว:</span>
-                                <span className="text-white">{Math.round(video.durationSeconds)} วินาที</span>
-                            </div>
-                        )}
-
-                        <div className="flex justify-between">
-                            <span className="text-gray-400">วันที่อัปโหลด:</span>
-                            <span className="text-white text-right">{formatDate(video.uploadedAt)}</span>
-                        </div>
-
-                        <div className="flex justify-between">
-                            <span className="text-gray-400">โหมด:</span>
-                            <span className="text-white">
-                                {video.isAnonymous ? 'ไม่ระบุตัวตน' : 'ระบุตัวตน'}
-                            </span>
-                        </div>
-                    </div>
-                </div>
+          
 
                 {/* Analysis Results */}
-                <div className="bg-gray-800 rounded-lg p-6">
+                <div className="bg-greay-custom rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                         <Icon icon="mdi:brain" width="20" height="20" />
                         ผลการวิเคราะห์
@@ -290,12 +254,12 @@ export default function VideoDetailPage() {
 
                     {video.analysisResult ? (
                         <div className="space-y-3">
-                            <div className="flex justify-between items-center">
-                                <span className="text-gray-400">สถานะ:</span>
+                            {/* <div className="flex justify-between items-center">
+                                <span className="text-gray-400">emotions:</span>
                                 <span className={`font-medium ${getStatusColor(video.analysisResult.status)}`}>
                                     {getStatusText(video.analysisResult.status)}
                                 </span>
-                            </div>
+                            </div> */}
 
                             {video.analysisResult.status === 'completed' && (
                                 <>
@@ -307,35 +271,15 @@ export default function VideoDetailPage() {
                                         </span>
                                     </div>
 
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-400">ความเชื่อมั่น:</span>
-                                        <span className={`font-medium ${getConfidenceColor(video.analysisResult.confidenceScore)}`}>
-                                            {(video.analysisResult.confidenceScore * 100).toFixed(1)}%
-                                        </span>
-                                    </div>
 
-                                    <div className="mt-4">
-                                        <div className="w-full bg-gray-700 rounded-full h-3">
-                                            <div
-                                                className={`h-3 rounded-full transition-all duration-300 ${video.analysisResult.isLieDetected ? 'bg-red-500' : 'bg-green-500'
-                                                    }`}
-                                                style={{ width: `${video.analysisResult.confidenceScore * 100}%` }}
-                                            ></div>
-                                        </div>
-                                        <div className="flex justify-between text-xs text-gray-400 mt-1">
-                                            <span>0%</span>
-                                            <span>50%</span>
-                                            <span>100%</span>
-                                        </div>
-                                    </div>
                                 </>
                             )}
 
                             {video.analysisResult.analyzedAt && (
                                 <div className="flex justify-between">
-                                    <span className="text-gray-400">วันที่วิเคราะห์:</span>
+                                    <span className="text-gray-400">รูปแบบที่โกหก:</span>
                                     <span className="text-white text-right text-sm">
-                                        {formatDate(video.analysisResult.analyzedAt)}
+                                        ท่าทาง
                                     </span>
                                 </div>
                             )}
@@ -347,10 +291,18 @@ export default function VideoDetailPage() {
                         </div>
                     )}
                 </div>
+                      <div className="bg-greay-custom rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <Icon icon="mdi:information" width="20" height="20" />
+                        Responce Log
+                    </h3>
+
+                   
+                </div>
             </div>
 
             {/* Actions */}
-            <div className="mt-6 flex gap-4">
+            {/* <div className="mt-6 flex gap-4">
                 <button
                     onClick={() => router.push('/list')}
                     className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
@@ -360,13 +312,14 @@ export default function VideoDetailPage() {
 
                 {video.analysisResult?.status === 'completed' && (
                     <button
-                        onClick={() => {/* TODO: Implement download or share functionality */ }}
+                        onClick={() => {}}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
                         ดาวน์โหลดรายงาน
                     </button>
                 )}
-            </div>
+            </div> */}
+            
         </div>
     );
 }

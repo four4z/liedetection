@@ -25,7 +25,7 @@ export default function Sidebar({ children }: SidebarProps) {
         {
             label: "รายการ",
             href: "/list",
-            icon: "mdi:home",
+            icon: "lucide:list-video",
         },
     ];
 

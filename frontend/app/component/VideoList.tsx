@@ -21,6 +21,8 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
     const [videos, setVideos] = useState<VideoItem[]>(propVideos || []);
     const [loading, setLoading] = useState(!propVideos);
     const [error, setError] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
     const router = useRouter();
 
     useEffect(() => {
@@ -141,6 +143,16 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
         );
     }
 
+    // pagination calculations
+    const totalPages = Math.ceil(videos.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedVideos = videos.slice(startIndex, startIndex + itemsPerPage);
+
+    const changePage = (page: number) => {
+        if (page < 1 || page > totalPages) return;
+        setCurrentPage(page);
+    };
+
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center mb-6">
@@ -151,11 +163,40 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
                 <input
                     type="text"
                     placeholder="ค้นหาวิดีโอ..."
-                    className="w-full p-2 bg-gray-700 text-white rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full p-2 text-white rounded-md border border-greay-custom focus:outline-none focus:ring-2 focus:ring-gray-700" />
             </div>
-            <span className="flex  justify-end text-gray-400 text-sm text-end pt-3">ทั้งหมด {videos.length} รายการ</span>
+            <div className="flex justify-end items-center">
+                {/* pagination navigation */}
+
+                <div className="flex justify-center items-center mt-6 space-x-2">
+                    <button
+                        onClick={() => changePage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1  text-white rounded disabled:opacity-50"
+                    >
+                        <Icon icon="ooui:next-rtl" width="20" height="20" />
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                        <button
+                            key={page}
+                            onClick={() => changePage(page)}
+                            className={`px-3 py-1 rounded ${page === currentPage ? 'bg-gray-700 text-white' : 'bg-greay-custom  text-white hover:bg-gray-600'}`}
+                        >{page}</button>
+                    ))}
+                    <button
+                        onClick={() => changePage(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1  text-white rounded disabled:opacity-50"
+                    >
+                        <Icon icon="ooui:next-ltr" width="20" height="20" />
+                    </button>
+                </div>
+
+                {/* <span className="flex  justify-end text-gray-400 text-sm text-end pt-3">ทั้งหมด {videos.length} รายการ</span> */}
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 ">
-                {videos.map((video) => (
+                {paginatedVideos.map((video) => (
                     <div
                         key={video.id}
                         onClick={() => handleVideoClick(video.id)}
@@ -174,17 +215,12 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
                             {/* Content */}
                             <div className="relative z-10">
                                 <div className="relative w-full aspect-video rounded-md overflow-hidden">
-                                    {video.videoPath ? (
-                                        <video
-                                            src={video.videoPath}
-                                            className="w-full h-full object-cover"
 
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full bg-greay-custom flex items-center justify-center text-gray-400 text-sm">
-                                            No Thumbnail
-                                        </div>
-                                    )}
+                                    <video
+                                        src={video.videoPath}
+                                        className="w-full h-full object-cover"
+                                    />
+
                                 </div>
 
                                 <div className="w-full pt-3">
@@ -203,6 +239,8 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
                 ))}
 
             </div>
+
+
 
         </div>
     );

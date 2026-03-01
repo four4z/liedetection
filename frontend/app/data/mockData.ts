@@ -95,6 +95,37 @@ export const mockVideos: VideoItem[] = [
         //     status: "failed"
         // }
     }
+    ,
+    {
+        id: "6",
+        userId: "user123",
+        originalFilename: "failed_analysis.mp4",
+        durationSeconds: 180,
+        fileSize: 31457280, // 30MB
+        uploadedAt: "2024-02-18T11:45:00Z",
+        isAnonymous: false,
+        isClaimed: true,
+        videoPath: "/videos/video-5.mp4",
+        // analysisResult: {
+        //     status: "failed"
+        // }
+    }
+    ,
+    {
+        id: "7",
+        userId: "user123",
+        originalFilename: "failed_analysis.mp4",
+        durationSeconds: 180,
+        fileSize: 31457280, // 30MB
+        uploadedAt: "2024-02-18T11:45:00Z",
+        isAnonymous: false,
+        isClaimed: true,
+        videoPath: "/videos/video-5.mp4",
+        // analysisResult: {
+        //     status: "failed"
+        // }
+    }
+    
 ];
 
 // Helper function to get video by ID
