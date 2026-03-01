@@ -15,19 +15,21 @@ export interface VideoItem {
     isAnonymous: boolean;
     isClaimed: boolean;
     analysisResult?: AnalysisResult;
-    thumbnailUrl?: string;
+    videoPath?: string;
 }
+
 
 export const mockVideos: VideoItem[] = [
     {
         id: "1",
         userId: "user123",
-        originalFilename: "interview_session_1.mp4",
+        originalFilename: "Test",
         durationSeconds: 120,
         fileSize: 15728640, // 15MB
         uploadedAt: "2024-02-22T10:30:00Z",
         isAnonymous: false,
         isClaimed: true,
+        videoPath: "/videos/Test.mp4",
         analysisResult: {
             isLieDetected: true,
             confidenceScore: 0.85,
@@ -44,6 +46,7 @@ export const mockVideos: VideoItem[] = [
         uploadedAt: "2024-02-21T15:20:00Z",
         isAnonymous: false,
         isClaimed: true,
+        videoPath: "/videos/video-2.mp4",
         analysisResult: {
             isLieDetected: false,
             confidenceScore: 0.12,
@@ -60,6 +63,7 @@ export const mockVideos: VideoItem[] = [
         uploadedAt: "2024-02-20T09:15:00Z",
         isAnonymous: true,
         isClaimed: false,
+        videoPath: "/videos/video-3.mp4",
         // analysisResult: {
         //     status: "processing"
         // }
@@ -72,6 +76,7 @@ export const mockVideos: VideoItem[] = [
         uploadedAt: "2024-02-19T14:00:00Z",
         isAnonymous: true,
         isClaimed: false,
+        videoPath: "/videos/video-4.mp4",
         // analysisResult: {
         //     status: "pending"
         // }
@@ -85,6 +90,7 @@ export const mockVideos: VideoItem[] = [
         uploadedAt: "2024-02-18T11:45:00Z",
         isAnonymous: false,
         isClaimed: true,
+        videoPath: "/videos/video-5.mp4",
         // analysisResult: {
         //     status: "failed"
         // }

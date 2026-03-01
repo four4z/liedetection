@@ -145,7 +145,7 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
         <div className="space-y-4">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-white">รายการวิดีโอ</h2>
-                
+
             </div>
             <div>
                 <input
@@ -174,15 +174,14 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
                             {/* Content */}
                             <div className="relative z-10">
                                 <div className="relative w-full aspect-video rounded-md overflow-hidden">
-                                    {video.thumbnailUrl ? (
-                                        <Image
-                                            src={video.thumbnailUrl}
-                                            alt="Video Thumbnail"
-                                            fill
-                                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                    {video.videoPath ? (
+                                        <video
+                                            src={video.videoPath}
+                                            className="w-full h-full object-cover"
+
                                         />
                                     ) : (
-                                        <div className="w-full h-full bg-red-300 flex items-center justify-center text-gray-400 text-sm">
+                                        <div className="w-full h-full bg-greay-custom flex items-center justify-center text-gray-400 text-sm">
                                             No Thumbnail
                                         </div>
                                     )}
@@ -199,12 +198,12 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
 
                             </div>
                         </div>
-                        
+
                     </div>
                 ))}
-                
+
             </div>
-            
+
         </div>
     );
 }

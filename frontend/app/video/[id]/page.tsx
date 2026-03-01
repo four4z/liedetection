@@ -21,6 +21,7 @@ interface VideoDetail {
     isAnonymous: boolean;
     isClaimed: boolean;
     analysisResult?: AnalysisResult;
+    videoPath?: string;
 }
 
 export default function VideoDetailPage() {
@@ -47,9 +48,9 @@ export default function VideoDetailPage() {
             setTimeout(() => {
                 const videoData = getMockVideoById(videoId);
                 if (videoData) {
-                    setVideo(videoData);
-                    // Mock video URL for development
-                    setVideoUrl(`/mock-video-${videoId}.mp4`);
+                    setVideo(videoData as VideoDetail);
+                    // Use videoPath from mock data
+                    setVideoUrl(videoData.videoPath || `/videos/video-${videoId}.mp4`);
                 } else {
                     throw new Error('ไม่พบวิดีโอนี้');
                 }
@@ -167,43 +168,77 @@ export default function VideoDetailPage() {
     }
 
     return (
-        <div className="p-6 max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto p-6 w-full">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4 mb-6">
                 <button
                     onClick={() => router.push('/list')}
                     className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
                 >
                     <Icon icon="mdi:arrow-left" width="20" height="20" />
-                    กลับไปยังรายการ
+                    Back
                 </button>
-                <h1 className="text-2xl font-bold text-white">รายละเอียดวิดีโอ</h1>
+                <h2 className="text-xl font-semibold text-white">
+                    {video.originalFilename}
+                </h2>
+
             </div>
 
             {/* Video Player */}
-            <div className="bg-gray-800 rounded-lg p-6 mb-6">
-                <h2 className="text-xl font-semibold text-white mb-4">{video.originalFilename}</h2>
+            <div className="flex gap-6 items-stretch mb-2">
 
-                {videoUrl ? (
-                    <div className="aspect-video bg-black rounded-lg overflow-hidden mb-4">
-                        <video
-                            controls
-                            className="w-full h-full"
-                            src={videoUrl}
-                            poster="/api/placeholder/640/360"
-                        >
-                            เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ
-                        </video>
+                {/* Left : Video Section */}
+                <div className="flex-1">
+                    <div className="rounded-lg mb-4">
+
+                        {videoUrl ? (
+                            <div className="h-125 bg-black rounded-lg overflow-hidden ">
+                                <video
+                                    controls
+                                    className="w-full h-full object-contain"
+                                    src={videoUrl}
+                                    poster="/api/placeholder/640/360"
+                                >
+                                    เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ
+                                </video>
+                            </div>
+                        ) : (
+                            <div className="h-125 bg-gray-700 rounded-lg flex items-center justify-center">
+                                <div className="text-center">
+                                    <Icon
+                                        icon="mdi:video-off"
+                                        width="48"
+                                        height="48"
+                                        className="text-gray-400 mb-2"
+                                    />
+                                    <p className="text-gray-400">ไม่สามารถโหลดวิดีโอได้</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                ) : (
-                    <div className="aspect-video bg-gray-700 rounded-lg flex items-center justify-center mb-4">
-                        <div className="text-center">
-                            <Icon icon="mdi:video-off" width="48" height="48" className="text-gray-400 mb-2" />
-                            <p className="text-gray-400">ไม่สามารถโหลดวิดีโอได้</p>
+                </div>
+
+                {/* Right : Log Section */}
+                <div className="w-96 h-125 border border-greay-custom rounded-lg p-3 flex flex-col">
+                    <h3 className="text-lg font-semibold text-white mb-4">Responce Log</h3>
+                    <div className="overflow-y-auto pr-2 flex-1">
+
+
+                        <div className="bg-greay-custom p-3 mb-2 rounded-lg text-gray-300  ">
+                            <div className="flex justify-between">
+                                <div className="text-[9px] shrink-0 mb-1">00.00-00.10</div>
+                                <div className="text-[9px] ">red</div>
+                            </div>
+                            <div className="text-xs wrap-break-word">
+                                Hello wouldsssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
+                            </div>
                         </div>
+
+
                     </div>
-                )}
+                </div>
             </div>
+
 
             {/* Video Information */}
             <div className="grid md:grid-cols-2 gap-6">
@@ -266,9 +301,8 @@ export default function VideoDetailPage() {
                                 <>
                                     <div className="flex justify-between items-center">
                                         <span className="text-gray-400">ผลการตรวจจับ:</span>
-                                        <span className={`font-medium text-lg ${
-                                            video.analysisResult.isLieDetected ? 'text-red-400' : 'text-green-400'
-                                        }`}>
+                                        <span className={`font-medium text-lg ${video.analysisResult.isLieDetected ? 'text-red-400' : 'text-green-400'
+                                            }`}>
                                             {video.analysisResult.isLieDetected ? 'ตรวจพบการโกหก' : 'ไม่พบการโกหก'}
                                         </span>
                                     </div>
@@ -283,9 +317,8 @@ export default function VideoDetailPage() {
                                     <div className="mt-4">
                                         <div className="w-full bg-gray-700 rounded-full h-3">
                                             <div
-                                                className={`h-3 rounded-full transition-all duration-300 ${
-                                                    video.analysisResult.isLieDetected ? 'bg-red-500' : 'bg-green-500'
-                                                }`}
+                                                className={`h-3 rounded-full transition-all duration-300 ${video.analysisResult.isLieDetected ? 'bg-red-500' : 'bg-green-500'
+                                                    }`}
                                                 style={{ width: `${video.analysisResult.confidenceScore * 100}%` }}
                                             ></div>
                                         </div>
@@ -327,7 +360,7 @@ export default function VideoDetailPage() {
 
                 {video.analysisResult?.status === 'completed' && (
                     <button
-                        onClick={() => {/* TODO: Implement download or share functionality */}}
+                        onClick={() => {/* TODO: Implement download or share functionality */ }}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
                         ดาวน์โหลดรายงาน

@@ -32,10 +32,11 @@ export default function Sidebar({ children }: SidebarProps) {
     const isActive = (href: string) => pathname === href;
 
     return (
-        <div className="flex h-screen">
+        // outer flex container hides any x‑overflow and allows children to shrink properly
+        <div className="flex h-screen overflow-x-hidden">
 
             <div
-                className={` shadow-2xl text-white transition-all duration-300 ease-in-out overflow-hidden  flex flex-col ${isOpen ? "w-64" : "w-20"
+                className={` shadow-2xl text-white transition-all duration-300 ease-in-out overflow-hidden  flex flex-col shrink-0 ${isOpen ? "w-64" : "w-20"
                     }`}
             >
 
@@ -102,7 +103,7 @@ export default function Sidebar({ children }: SidebarProps) {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-auto bg-main-custom">
+            <div className="flex-1 min-w-0 overflow-auto bg-main-custom">
                 {children}
             </div>
         </div>
