@@ -67,10 +67,9 @@ export default function MainPage() {
     };
 
     return (
-        <div className="min-h-screen p-8 text-white  ">
+        <div className="min-h-screen p-8 text-white   ">
             <div className="max-w-4xl mx-auto">
-                <h1 className="text-4xl font-bold mb-8">Upload Video for Lie Detection</h1>
-
+               
                 {/* Video Upload Area */}
                 {!videoUrl ? (
                     <div
@@ -82,8 +81,8 @@ export default function MainPage() {
                         onDrop={handleDrop}
                         className={`w-full rounded-2xl border-2 border-dashed
                         transition-all duration-300
-                        ${dragActive ? "border-blue-500 bg-slate-800" : "border-slate-600 bg-slate-900"}
-                        p-12 flex flex-col items-center gap-6 cursor-pointer hover:border-blue-400`}
+                        ${dragActive ? "border-slate-700 bg-slate-800" : "border-slate-600 bg-slate-900"}
+                        p-12 flex flex-col items-center gap-6 cursor-pointer`}
                     >
                         {/* Icon */}
                         <div className="p-6 rounded-2xl bg-slate-700">
@@ -101,7 +100,7 @@ export default function MainPage() {
                         </p>
 
                         {/* Upload Button */}
-                        <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-semibold transition">
+                        <label className="cursor-pointer bg-slate-700 hover:bg-blue-950 px-6 py-2 rounded-lg font-semibold transition">
                             Choose Video File
                             <input
                                 type="file"
