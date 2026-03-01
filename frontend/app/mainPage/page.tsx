@@ -118,7 +118,7 @@ export default function MainPage() {
                     /* Video Display Area */
                     <div className="space-y-6">
                         {/* Video Player */}
-                        <div className="bg-black rounded-2xl overflow-hidden border border-slate-700">
+                        <div className="bg-black rounded-2xl overflow-hidden">
                             <video
                                 src={videoUrl}
                                 controls
@@ -127,44 +127,46 @@ export default function MainPage() {
                         </div>
 
                         {/* Video Info and Action Buttons */}
-                        <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
-                            <div className="flex justify-between items-start gap-4">
+                        <div className="bg-greay-custom rounded-2xl p-6">
+                            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                                 <div className="flex-1">
                                     <h2 className="text-xl font-semibold mb-2">
                                         {file?.name}
                                     </h2>
                                     <p className="text-slate-400 text-sm">
-                                        File size: {(file!.size / (1024 * 1024)).toFixed(2)} MB
+                                        ขนาดไฟล์: {(file!.size / (1024 * 1024)).toFixed(2)} MB
                                     </p>
                                 </div>
-                                <div className="flex gap-3">
-                                    {/* Start Analysis Button */}
+                                <div className="flex flex-wrap flex-col gap-3">
+                                    <div className="text-center">ยืนยันการตรวจสอบ?</div>
+                                    <div className="flex gap-4">
                                     <button
                                         onClick={handleStartAnalysis}
                                         disabled={isAnalyzing}
                                         className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-semibold transition"
                                     >
                                         <Icon
-                                            icon="mdi:play-circle-outline"
+                                            icon="mdi:check-circle-outline"
                                             width="20"
                                             height="20"
                                         />
-                                        {isAnalyzing ? "Analyzing..." : "Start Lie Detection"}
+                                        {isAnalyzing ? "กำลังประมวลผล..." : "ตกลง"}
                                     </button>
 
-                                    {/* Delete Button */}
+                                    {/* Cancel/Remove */}
                                     <button
                                         onClick={handleDeleteVideo}
                                         disabled={isAnalyzing}
                                         className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-semibold transition"
                                     >
                                         <Icon
-                                            icon="mdi:trash-can-outline"
+                                            icon="mdi:close-circle-outline"
                                             width="20"
                                             height="20"
                                         />
-                                        cancle
+                                        ยกเลิก
                                     </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
