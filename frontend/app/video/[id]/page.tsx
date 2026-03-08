@@ -1,8 +1,9 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { getMockVideoById, VideoItem } from "../../data/mockData";
+import TimewarpTimeline from "../../component/TimewarpTimeline";
 
 interface AnalysisResult {
     isLieDetected: boolean;
@@ -28,6 +29,7 @@ export default function VideoDetailPage() {
     const params = useParams();
     const router = useRouter();
     const videoId = params.id as string;
+    const videoRef = useRef<HTMLVideoElement>(null);
 
     const [video, setVideo] = useState<VideoDetail | null>(null);
     const [loading, setLoading] = useState(true);
@@ -194,6 +196,7 @@ export default function VideoDetailPage() {
                         {videoUrl ? (
                             <div className="h-125 bg-black rounded-lg overflow-hidden ">
                                 <video
+                                    ref={videoRef}
                                     controls
                                     className="w-full h-full object-contain"
                                     src={videoUrl}
@@ -219,21 +222,14 @@ export default function VideoDetailPage() {
                 </div>
 
                 {/* Right : Log Section */}
-                <div className="w-96 h-125 border border-greay-custom rounded-lg p-3 flex flex-col">
-                    <h3 className="text-lg font-semibold text-white mb-4">Text Log</h3>
-                    <div className="overflow-y-auto pr-2 flex-1">
-
-
-                        <div className="bg-greay-custom p-3 mb-2 rounded-lg text-gray-300  ">
-                            <div className="flex justify-between">
-                                <div className="text-[9px] shrink-0 mb-1">00.00-00.10</div>
-                                <div className="text-[9px] ">red</div>
-                            </div>
-                            
-                        </div>
-
-
-                    </div>
+                <div className="w-96 h-125 flex flex-col">
+                    <TimewarpTimeline
+                        videoDuration={video?.durationSeconds || 60}
+                        videoRef={videoRef}
+                        onPointClick={(timestamp) => {
+                            console.log(`Clicked timewarp point at ${timestamp}s`);
+                        }}
+                    />
                 </div>
             </div>
 
