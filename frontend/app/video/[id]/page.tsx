@@ -235,11 +235,9 @@ export default function VideoDetailPage() {
                 </div>
             </div>
 
-
             {/* Video Information */}
             <div className="grid md:grid-cols-2 gap-6">
                 {/* Basic Information */}
-
 
                 {/* Analysis Results */}
                 <div className="bg-greay-custom rounded-lg p-6">
@@ -250,12 +248,6 @@ export default function VideoDetailPage() {
 
                     {video.analysisResult ? (
                         <div className="space-y-3">
-                            {/* <div className="flex justify-between items-center">
-                                <span className="text-gray-400">emotions:</span>
-                                <span className={`font-medium ${getStatusColor(video.analysisResult.status)}`}>
-                                    {getStatusText(video.analysisResult.status)}
-                                </span>
-                            </div> */}
 
                             {video.analysisResult.status === 'completed' && (
                                 <>
@@ -266,7 +258,6 @@ export default function VideoDetailPage() {
                                             {video.analysisResult.isLieDetected ? 'ตรวจพบการโกหก' : 'ไม่พบการโกหก'}
                                         </span>
                                     </div>
-
 
                                 </>
                             )}
