@@ -229,9 +229,7 @@ export default function VideoDetailPage() {
                                 <div className="text-[9px] shrink-0 mb-1">00.00-00.10</div>
                                 <div className="text-[9px] ">red</div>
                             </div>
-                            <div className="text-xs wrap-break-word">
-                                Hello wouldsssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
-                            </div>
+                            
                         </div>
 
 

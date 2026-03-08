@@ -208,9 +208,9 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
                             <div className="absolute inset-0 
                                 bg-slate-700 rounded-2xl
                                 opacity-0 group-hover:opacity-100
-                                scale-90 group-hover:scale-100
+                                scale-95 group-hover:scale-100
                                 origin-center
-                                transition-transform duration-500 ease-out" />
+                                transition-all duration-500 ease-in-out" />
 
                             {/* Content */}
                             <div className="relative z-10">
