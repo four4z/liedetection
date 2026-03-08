@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
-import { getMockVideoById, VideoItem } from "../../data/mockData";
+import { getMockVideoById, VideoItem, TimeWarpPoint } from "../../data/mockData";
 import TimewarpTimeline from "../../component/TimewarpTimeline";
 
 interface AnalysisResult {
@@ -23,6 +23,7 @@ interface VideoDetail {
     isClaimed: boolean;
     analysisResult?: AnalysisResult;
     videoPath?: string;
+    timeWarpPoints?: TimeWarpPoint[];
 }
 
 export default function VideoDetailPage() {
@@ -226,6 +227,7 @@ export default function VideoDetailPage() {
                     <TimewarpTimeline
                         videoDuration={video?.durationSeconds || 60}
                         videoRef={videoRef}
+                        points={video?.timeWarpPoints}
                         onPointClick={(timestamp) => {
                             console.log(`Clicked timewarp point at ${timestamp}s`);
                         }}
@@ -237,7 +239,7 @@ export default function VideoDetailPage() {
             {/* Video Information */}
             <div className="grid md:grid-cols-2 gap-6">
                 {/* Basic Information */}
-          
+
 
                 {/* Analysis Results */}
                 <div className="bg-greay-custom rounded-lg p-6">
