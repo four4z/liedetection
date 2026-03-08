@@ -191,11 +191,11 @@ export default function VideoDetailPage() {
             <div className="flex gap-6 items-stretch mb-2">
 
                 {/* Left : Video Section */}
-                <div className="flex-1">
-                    <div className="rounded-lg mb-4">
+                <div className="">
+                    <div className="rounded-lg mb-4 w-full">
 
                         {videoUrl ? (
-                            <div className="h-125 bg-black rounded-lg overflow-hidden ">
+                            <div className="h-125 max-w-250 bg-black rounded-lg overflow-hidden ">
                                 <video
                                     ref={videoRef}
                                     controls
@@ -207,7 +207,7 @@ export default function VideoDetailPage() {
                                 </video>
                             </div>
                         ) : (
-                            <div className="h-125 bg-gray-700 rounded-lg flex items-center justify-center">
+                            <div className="h-125 max-w-250 bg-gray-700 rounded-lg flex items-center justify-center">
                                 <div className="text-center">
                                     <Icon
                                         icon="mdi:video-off"
@@ -286,14 +286,6 @@ export default function VideoDetailPage() {
                             <p className="text-gray-400">ยังไม่ได้วิเคราะห์</p>
                         </div>
                     )}
-                </div>
-                      <div className="bg-greay-custom rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <Icon icon="mdi:information" width="20" height="20" />
-                        Responce Log
-                    </h3>
-
-                   
                 </div>
             </div>
 

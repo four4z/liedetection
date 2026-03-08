@@ -94,8 +94,8 @@ export default function TimewarpTimeline({
     };
 
     const getConfidenceBgColor = (confidence: number) => {
-        if (confidence >= 0.8) return "bg-red-500/20 border-red-500/50";
-        if (confidence >= 0.6) return "bg-yellow-500/20 border-yellow-500/50";
+        if (confidence >= 0.8) return "bg-red-500/20 ";
+        if (confidence >= 0.6) return "bg-yellow-500/20 ";
         return "bg-green-500/20 border-green-500/50";
     };
 
