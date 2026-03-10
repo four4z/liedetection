@@ -1,14 +1,25 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Icon } from "@iconify/react";
 
 export default function MainPage() {
     const [file, setFile] = useState<File | null>(null);
-    const [videoUrl, setVideoUrl] = useState<string | null>(null);
+    const [videoUrl, setVideoUrl] = useState<string | undefined>(undefined);
     const [dragActive, setDragActive] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+    const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+    const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
 
     const handleFile = (selectedFile: File) => {
+
+        if (videoUrl) {
+            URL.revokeObjectURL(videoUrl);
+        }
+
         const allowedTypes = ["video/mp4", "video/webm", "video/ogg", "video/quicktime"];
 
         if (!allowedTypes.includes(selectedFile.type)) {
@@ -36,14 +47,31 @@ export default function MainPage() {
         }
     };
 
-    const handleDeleteVideo = () => {
-        setFile(null);
-        if (videoUrl) {
-            URL.revokeObjectURL(videoUrl);
-        }
-        setVideoUrl(null);
-        setIsAnalyzing(false);
-    };
+const handleDeleteVideo = () => {
+    if (videoUrl) {
+        URL.revokeObjectURL(videoUrl);
+    }
+
+    if (recordedUrl) {
+        URL.revokeObjectURL(recordedUrl);
+    }
+
+    if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+    }
+
+    mediaRecorderRef.current = null;
+    streamRef.current = null;
+
+    setFile(null);
+    setVideoUrl(undefined);
+    setRecordedBlob(null);
+    setRecordedUrl(null);
+    setIsRecording(false);
+    setIsAnalyzing(false);
+};
+
+
 
     const handleStartAnalysis = async () => {
         if (!file) return;
@@ -58,6 +86,7 @@ export default function MainPage() {
             //     method: "POST",
             //     body: formData,
             // });
+            handleDeleteVideo();
         } catch (error) {
             console.error("Error analyzing video:", error);
             alert("เกิดข้อผิดพลาดในการวิเคราะห์วิดีโอ");
@@ -66,12 +95,122 @@ export default function MainPage() {
         }
     };
 
+    const startRecording = async () => {
+        try {
+
+            setVideoUrl(undefined);
+            setRecordedUrl(null);
+            setRecordedBlob(null);
+
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: true,
+            });
+
+            streamRef.current = stream;
+
+            if (videoPreviewRef.current) {
+                videoPreviewRef.current.srcObject = stream;
+                await videoPreviewRef.current.play();
+            }
+
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+
+            const chunks: Blob[] = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    chunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+
+                const blob = new Blob(chunks, { type: "video/webm" });
+                const url = URL.createObjectURL(blob);
+
+                const file = new File([blob], "recorded-video.webm", {
+                    type: "video/webm",
+                });
+
+                setFile(file);
+                setVideoUrl(url);
+
+                setRecordedBlob(blob);
+                setRecordedUrl(url);
+
+                setIsRecording(false);
+
+                // stop stream หลัง record เสร็จ
+                if (streamRef.current) {
+                    streamRef.current.getTracks().forEach(track => track.stop());
+                }
+
+                if (videoPreviewRef.current) {
+                    videoPreviewRef.current.srcObject = null;
+                }
+            };
+
+            mediaRecorder.start();
+            setIsRecording(true);
+
+            console.log("Recording started");
+
+        } catch (error) {
+            console.error(error);
+            alert("ไม่สามารถเข้าถึงกล้องได้");
+        }
+    };
+
+const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+
+        mediaRecorderRef.current.requestData(); // ดึง chunk ล่าสุด
+        mediaRecorderRef.current.stop();
+
+    }
+};
+
+    const handleUploadRecorded = () => {
+        if (recordedBlob) {
+            const recordedFile = new File([recordedBlob], "recorded-video.webm", {
+                type: "video/webm",
+            });
+            handleFile(recordedFile);
+            setRecordedBlob(null);
+            if (recordedUrl) {
+                URL.revokeObjectURL(recordedUrl);
+            }
+            setRecordedUrl(null);
+        }
+    };
+
+    const handleDeleteRecorded = () => {
+        if (recordedUrl) {
+            URL.revokeObjectURL(recordedUrl);
+        }
+
+        setRecordedBlob(null);
+        setRecordedUrl(null);
+    };
+
     return (
         <div className="min-h-screen p-8 text-white   ">
             <div className="max-w-4xl mx-auto">
-               
+                {isRecording && (
+                    <div className="mb-6 bg-black rounded-2xl overflow-hidden">
+                        <video
+                            ref={videoPreviewRef}
+                            autoPlay
+                            muted
+                            playsInline
+                            className="w-full max-h-96 object-cover"
+                        />
+                    </div>
+                )}
                 {/* Video Upload Area */}
-                {!videoUrl ? (
+                {!videoUrl && !recordedUrl ? (
                     <div
                         onDragOver={(e) => {
                             e.preventDefault();
@@ -99,16 +238,36 @@ export default function MainPage() {
                             Drag and drop your video here, or
                         </p>
 
-                        {/* Upload Button */}
-                        <label className="cursor-pointer bg-slate-700 hover:bg-blue-950 px-6 py-2 rounded-lg font-semibold transition">
-                            Choose Video File
-                            <input
-                                type="file"
-                                accept="video/*"
-                                onChange={handleFileChange}
-                                className="hidden"
-                            />
-                        </label>
+                        {/* Upload Buttons */}
+                        <div className="flex gap-4">
+                            <label className="cursor-pointer bg-slate-700 hover:bg-blue-950 px-6 py-2 rounded-lg font-semibold transition">
+                                Choose Video File
+                                <input
+                                    type="file"
+                                    accept="video/*"
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                />
+                            </label>
+
+                            {!isRecording ? (
+                                <button
+                                    onClick={startRecording}
+                                    className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-semibold transition"
+                                >
+                                    <Icon icon="mdi:video-plus" width="20" height="20" className="inline mr-2" />
+                                    Record Video
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={stopRecording}
+                                    className="bg-red-800 hover:bg-red-900 px-6 py-2 rounded-lg font-semibold transition"
+                                >
+                                    <Icon icon="mdi:stop-circle" width="20" height="20" className="inline mr-2" />
+                                    Stop Recording
+                                </button>
+                            )}
+                        </div>
 
                         <p className="text-sm text-slate-400">
                             Supports .mp4, .webm, .ogg, and .mov formats
@@ -120,7 +279,7 @@ export default function MainPage() {
                         {/* Video Player */}
                         <div className="bg-black rounded-2xl overflow-hidden">
                             <video
-                                src={videoUrl}
+                                src={videoUrl || recordedUrl || undefined}
                                 controls
                                 className="w-full h-auto max-h-96"
                             />
@@ -133,39 +292,41 @@ export default function MainPage() {
                                     <h2 className="text-xl font-semibold mb-2">
                                         {file?.name}
                                     </h2>
-                                    <p className="text-slate-400 text-sm">
-                                        ขนาดไฟล์: {(file!.size / (1024 * 1024)).toFixed(2)} MB
-                                    </p>
+                                    {file && (
+                                        <p className="text-slate-400 text-sm">
+                                            ขนาดไฟล์: {(file.size / (1024 * 1024)).toFixed(2)} MB
+                                        </p>
+                                    )}
                                 </div>
                                 <div className="flex flex-wrap flex-col gap-3">
                                     <div className="text-center">ยืนยันการตรวจสอบ?</div>
                                     <div className="flex gap-4">
-                                    <button
-                                        onClick={handleStartAnalysis}
-                                        disabled={isAnalyzing}
-                                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-semibold transition"
-                                    >
-                                        <Icon
-                                            icon="mdi:check-circle-outline"
-                                            width="20"
-                                            height="20"
-                                        />
-                                        {isAnalyzing ? "กำลังประมวลผล..." : "ตกลง"}
-                                    </button>
+                                        <button
+                                            onClick={handleStartAnalysis}
+                                            disabled={isAnalyzing}
+                                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-semibold transition"
+                                        >
+                                            <Icon
+                                                icon="mdi:check-circle-outline"
+                                                width="20"
+                                                height="20"
+                                            />
+                                            {isAnalyzing ? "กำลังประมวลผล..." : "ตกลง"}
+                                        </button>
 
-                                    {/* Cancel/Remove */}
-                                    <button
-                                        onClick={handleDeleteVideo}
-                                        disabled={isAnalyzing}
-                                        className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-semibold transition"
-                                    >
-                                        <Icon
-                                            icon="mdi:close-circle-outline"
-                                            width="20"
-                                            height="20"
-                                        />
-                                        ยกเลิก
-                                    </button>
+                                        {/* Cancel/Remove */}
+                                        <button
+                                            onClick={handleDeleteVideo}
+                                            disabled={isAnalyzing}
+                                            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-semibold transition"
+                                        >
+                                            <Icon
+                                                icon="mdi:close-circle-outline"
+                                                width="20"
+                                                height="20"
+                                            />
+                                            ยกเลิก
+                                        </button>
                                     </div>
                                 </div>
                             </div>
