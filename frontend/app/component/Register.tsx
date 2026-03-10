@@ -9,6 +9,8 @@ type RegisterProps = {
 };
 function Register({ setMode }: RegisterProps) {
 
+    const [gender, setGender] = useState<"male" | "female" | null>(null);
+
     return (
         <div className="min-h-screen flex items-center justify-center ">
             <div className="w-full max-w-sm bg-dark-custom border border-dark-custom rounded-3xl shadow-lg p-12 text-white">
@@ -66,19 +68,35 @@ function Register({ setMode }: RegisterProps) {
                 </div>
                 <div className="flex items-center gap-3 my-6">
                     <div className="flex-1 h-px bg-white/20" />
-                    <span className="text-sm text-white/50">SEX</span>
+                    <span className="text-sm text-white/50">GEN</span>
                     <div className="flex-1 h-px bg-white/20" />
                 </div>
 
                 <div className="flex justify-center gap-2">
-                    <button className=" rounded-full border border-white/20 p-2 text-sm hover:bg-white/10 transition">
+
+                    <button
+                        onClick={() => setGender(gender === "male" ? null : "male")}
+                        className={`rounded-full border p-2 text-sm transition
+                        ${gender === "male"
+                                ? "bg-white/20 border-white"
+                                : "border-white/20 hover:bg-white/10"
+                            }`}
+                    >
                         <Icon icon="glyphs-poly:male" width="25" height="25" />
                     </button>
-                    <button className=" rounded-full border border-white/20 p-2 text-sm hover:bg-white/10 transition">
+
+                    <button
+                        onClick={() => setGender(gender === "female" ? null : "female")}
+                        className={`rounded-full border p-2 text-sm transition
+                        ${gender === "female"
+                                ? "bg-white/20 border-white"
+                                : "border-white/20 hover:bg-white/10"
+                            }`}
+                    >
                         <Icon icon="glyphs-poly:female" width="25" height="25" />
                     </button>
-                </div>
 
+                </div>
 
                 <button className="w-full rounded-xl bg-dark-secondary py-2 mt-8 text-sm font-medium cursor-pointer hover:bg-dark-secondary-hover transition">
                     Sign Up
