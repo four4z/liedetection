@@ -152,7 +152,7 @@ const handleDeleteVideo = () => {
                 }
             };
 
-            mediaRecorder.start();
+            mediaRecorder.start(1000);
             setIsRecording(true);
 
             console.log("Recording started");
@@ -165,8 +165,6 @@ const handleDeleteVideo = () => {
 
 const stopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-
-        mediaRecorderRef.current.requestData(); // ดึง chunk ล่าสุด
         mediaRecorderRef.current.stop();
 
     }
