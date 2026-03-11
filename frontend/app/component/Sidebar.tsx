@@ -10,6 +10,10 @@ interface SidebarProps {
 
 export default function Sidebar({ children }: SidebarProps) {
     const [isOpen, setIsOpen] = useState(true);
+    const [openPopup, setOpenPopup] = useState(false);
+    const togglePopup = () => {
+        setOpenPopup((prev) => !prev);
+    };
     const pathname = usePathname();
 
     const toggleSidebar = () => {
@@ -36,7 +40,7 @@ export default function Sidebar({ children }: SidebarProps) {
         <div className="flex h-screen overflow-x-hidden">
 
             <div
-                className={` shadow-2xl text-white transition-all duration-300 ease-in-out overflow-hidden  flex flex-col shrink-0 ${isOpen ? "w-64" : "w-20"
+                className={` shadow-2xl text-white transition-all duration-300 ease-in-out overflow-hidden  flex flex-col shrink-0 ${isOpen ? "w-64" : "w-fit"
                     }`}
             >
 
@@ -63,8 +67,8 @@ export default function Sidebar({ children }: SidebarProps) {
                             key={item.href}
                             href={item.href}
                             className={`flex items-center gap-4 px-3 py-3 rounded-lg transition-colors duration-200 ${isActive(item.href)
-                                    ? "bg-greay-custom text-white"
-                                    : "hover:bg-slate-700"
+                                ? "bg-greay-custom text-white"
+                                : "hover:bg-slate-700"
                                 }`}
                             title={!isOpen ? item.label : ""}
                         >
@@ -83,25 +87,65 @@ export default function Sidebar({ children }: SidebarProps) {
                     ))}
                 </nav>
 
+                {/* user/profile section */}
                 <div className="border-t border-greay-custom p-4">
-                    <button
-                        className="flex items-center gap-4 w-full px-3 py-3 rounded-lg hover:bg-slate-700 transition-colors duration-200"
-                        title={!isOpen ? "Logout" : ""}
-                    >
-                        <Icon
-                            icon="mdi:logout"
-                            width="24"
-                            height="24"
-                            className="shrink-0"
-                        />
-                        {isOpen && (
-                            <span className="whitespace-nowrap text-sm font-medium">
-                                Logout
-                            </span>
-                        )}
-                    </button>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <Icon
+                                icon="mdi:account-circle"
+                                width="32"
+                                height="32"
+                                className="shrink-0 text-white"
+                            />
+                            {isOpen && (
+                                <span className="whitespace-nowrap text-sm font-medium">
+                                    User Name
+                                </span>
+                            )}
+                        </div>
+                        <div className="relative">
+
+                            <div className="relative">
+
+  {isOpen && (
+    <>
+      <button
+        onClick={togglePopup}
+        className="p-2 rounded-full hover:bg-slate-700 transition-colors duration-200"
+      >
+        <Icon
+          icon="mdi:dots-vertical"
+          width="24"
+          height="24"
+          className="text-white"
+        />
+      </button>
+
+      {openPopup && (
+        <div className="absolute bottom-full right-0 mb-2 bg-white text-black p-2 rounded-lg shadow-xl z-50 w-40">
+          <button
+            onClick={() => {
+              togglePopup();
+              console.log("logout");
+            }}
+            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg hover:bg-slate-200"
+          >
+            <Icon icon="mdi:logout" width="20" height="20" />
+            <span className="text-sm">Logout</span>
+          </button>
+        </div>
+      )}
+    </>
+  )}
+
+</div>
+
+                        </div>
+
+                    </div>
                 </div>
             </div>
+
 
             <div className="flex-1 min-w-0 overflow-auto bg-main-custom">
                 {children}
