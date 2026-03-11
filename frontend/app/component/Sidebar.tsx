@@ -107,38 +107,38 @@ export default function Sidebar({ children }: SidebarProps) {
 
                             <div className="relative">
 
-  {isOpen && (
-    <>
-      <button
-        onClick={togglePopup}
-        className="p-2 rounded-full hover:bg-slate-700 transition-colors duration-200"
-      >
-        <Icon
-          icon="mdi:dots-vertical"
-          width="24"
-          height="24"
-          className="text-white"
-        />
-      </button>
+                                {isOpen && (
+                                    <>
+                                        <button
+                                            onClick={togglePopup}
+                                            className="p-2 rounded-full hover:bg-slate-700 transition-colors duration-200"
+                                        >
+                                            <Icon
+                                                icon="mdi:dots-vertical"
+                                                width="24"
+                                                height="24"
+                                                className="text-white"
+                                            />
+                                        </button>
 
-      {openPopup && (
-        <div className="absolute bottom-full right-0 mb-2 bg-white text-black p-2 rounded-lg shadow-xl z-50 w-40">
-          <button
-            onClick={() => {
-              togglePopup();
-              console.log("logout");
-            }}
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg hover:bg-slate-200"
-          >
-            <Icon icon="mdi:logout" width="20" height="20" />
-            <span className="text-sm">Logout</span>
-          </button>
-        </div>
-      )}
-    </>
-  )}
+                                        {openPopup && (
+                                            <div className="absolute bottom-full right-0 mb-2 bg-white text-black p-2 rounded-lg shadow-xl z-50 w-40">
+                                                <button
+                                                    onClick={() => {
+                                                        togglePopup();
+                                                        console.log("logout");
+                                                    }}
+                                                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg hover:bg-slate-200"
+                                                >
+                                                    <Icon icon="mdi:logout" width="20" height="20" />
+                                                    <span className="text-sm">Logout</span>
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
 
-</div>
+                            </div>
 
                         </div>
 
