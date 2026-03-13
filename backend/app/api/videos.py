@@ -1,67 +1,39 @@
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, BackgroundTasks
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from datetime import datetime
 from typing import Optional, List
 import uuid
 from bson import ObjectId
-import io
 
-from app.models.schemas import VideoResponse, VideoUpload
-from app.database.connection import get_videos_collection, get_gridfs, get_history_collection
+from app.models.schemas import VideoResponse, VideoUpload, VideoLinkSubmit
+from app.database.connection import get_videos_collection, get_history_collection
 from app.api.auth import get_current_user, get_optional_user
 from app.ai.analyzer import analyze_video
 
 router = APIRouter()
 
-ALLOWED_EXTENSIONS = {"mp4", "avi", "mov", "webm", "mkv"}
-MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
-
-
-def get_file_extension(filename: str) -> str:
-    return filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
-
 
 @router.post("/upload", response_model=VideoUpload)
 async def upload_video(
-    file: UploadFile = File(...),
+    video_data: VideoLinkSubmit,
     current_user: Optional[dict] = Depends(get_optional_user)
 ):
-    """Upload a video for analysis. Works for both logged in and anonymous users."""
+    """Submit a video link for analysis. Works for both logged in and anonymous users."""
     
-    # Validate file extension
-    ext = get_file_extension(file.filename)
-    if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"File type not allowed. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
-        )
-    
-    # Read file content
-    content = await file.read()
-    file_size = len(content)
-    
-    if file_size > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail="File too large. Max size: 100MB")
-    
-    # Store in GridFS
-    gridfs = get_gridfs()
-    file_id = await gridfs.upload_from_stream(
-        file.filename,
-        io.BytesIO(content),
-        metadata={"content_type": file.content_type}
-    )
+    # Basic URL validation
+    if not video_data.videoUrl.startswith(("http://", "https://")):
+        raise HTTPException(status_code=400, detail="Invalid URL. Must start with http:// or https://")
     
     # Create video document
     is_anonymous = current_user is None
     session_token = str(uuid.uuid4()) if is_anonymous else None
+    title = video_data.title or video_data.videoUrl.rsplit("/", 1)[-1]
     
     video_doc = {
         "userId": str(current_user["_id"]) if current_user else None,
         "sessionToken": session_token,
-        "filePath": str(file_id),  # GridFS file ID
-        "originalFilename": file.filename,
-        "durationSeconds": None,  # Will be updated after analysis
-        "fileSize": file_size,
+        "videoUrl": video_data.videoUrl,
+        "title": title,
+        "durationSeconds": None,
         "uploadedAt": datetime.utcnow(),
         "isAnonymous": is_anonymous,
         "isClaimed": False,
@@ -76,8 +48,8 @@ async def upload_video(
     
     return VideoUpload(
         id=str(result.inserted_id),
-        originalFilename=file.filename,
-        fileSize=file_size,
+        videoUrl=video_data.videoUrl,
+        title=title,
         uploadedAt=video_doc["uploadedAt"],
         isAnonymous=is_anonymous,
         sessionToken=session_token
@@ -122,48 +94,14 @@ async def get_video(
     return VideoResponse(
         id=str(video["_id"]),
         userId=video.get("userId"),
-        originalFilename=video["originalFilename"],
+        videoUrl=video["videoUrl"],
+        title=video.get("title"),
         durationSeconds=video.get("durationSeconds"),
-        fileSize=video["fileSize"],
         uploadedAt=video["uploadedAt"],
         isAnonymous=video["isAnonymous"],
         isClaimed=video.get("isClaimed", False),
         analysisResult=analysis_result
     )
-
-
-@router.get("/{video_id}/stream")
-async def stream_video(video_id: str):
-    """Stream video file"""
-    videos = get_videos_collection()
-    
-    try:
-        video = await videos.find_one({"_id": ObjectId(video_id)})
-    except:
-        raise HTTPException(status_code=400, detail="Invalid video ID")
-    
-    if not video:
-        raise HTTPException(status_code=404, detail="Video not found")
-    
-    gridfs = get_gridfs()
-    
-    try:
-        grid_out = await gridfs.open_download_stream(ObjectId(video["filePath"]))
-        
-        async def stream_generator():
-            while True:
-                chunk = await grid_out.read(1024 * 1024)  # 1MB chunks
-                if not chunk:
-                    break
-                yield chunk
-        
-        return StreamingResponse(
-            stream_generator(),
-            media_type="video/mp4",
-            headers={"Content-Disposition": f"inline; filename={video['originalFilename']}"}
-        )
-    except Exception as e:
-        raise HTTPException(status_code=404, detail="Video file not found")
 
 
 @router.post("/{video_id}/analyze")
@@ -246,9 +184,9 @@ async def get_user_videos(
         result.append(VideoResponse(
             id=str(video["_id"]),
             userId=video.get("userId"),
-            originalFilename=video["originalFilename"],
+            videoUrl=video["videoUrl"],
+            title=video.get("title"),
             durationSeconds=video.get("durationSeconds"),
-            fileSize=video["fileSize"],
             uploadedAt=video["uploadedAt"],
             isAnonymous=video["isAnonymous"],
             isClaimed=video.get("isClaimed", False),
@@ -256,3 +194,4 @@ async def get_user_videos(
         ))
     
     return result
+
