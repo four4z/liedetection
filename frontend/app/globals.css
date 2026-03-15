@@ -64,7 +64,9 @@ body {
   }
 }
 
-
+.bg-black-custom {
+  background-color: rgba(0, 0, 0, 0.76);
+}
 
 .bg-dark-gradient {
   background: linear-gradient(175deg, rgba(15, 23, 42, 1) 30%, rgba(23, 23, 23, 1) 100%);

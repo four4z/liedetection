@@ -7,10 +7,10 @@ import Image from "next/image";
 
 
 interface TimewarpTimelineProps {
-    videoDuration: number; 
+    videoDuration: number;
     videoRef?: React.RefObject<HTMLVideoElement | null>;
     onPointClick?: (timestamp: number) => void;
-    points?: TimeWarpPoint[]; 
+    points?: TimeWarpPoint[];
 }
 
 export default function TimewarpTimeline({
@@ -87,6 +87,12 @@ export default function TimewarpTimeline({
         return `${mins}:${secs.toString().padStart(2, "0")}`;
     };
 
+    const getConfidenceTextColor = (confidence: number) => {
+        if (confidence >= 0.8) return "text-red-400";
+        if (confidence >= 0.6) return "text-yellow-400";
+        return "text-green-400";
+    };
+
     const getConfidenceColor = (confidence: number) => {
         if (confidence >= 0.8) return "bg-red-500";
         if (confidence >= 0.6) return "bg-green-500";
@@ -161,35 +167,39 @@ export default function TimewarpTimeline({
                                 point.confidence
                             )} hover:bg-gray-700/50 `}
                         >
+
                             <div className="flex justify-between ">
                                 <div className="flex gap-2">
- {thumbnails[point.id] && (
-                                    <Image
-                                        src={thumbnails[point.id]}
-                                        alt={`Frame at ${formatTime(point.timestamp)}`}
-                                        className=" object-cover rounded"
-                                        width={100}
-                                        height={48}
-                                    />
-                                )}
-                                <div className="text-xs text-gray-400 font-mono">
-                                    {formatTime(point.timestamp)}
+                                    {thumbnails[point.id] && (
+                                        <Image
+                                            src={thumbnails[point.id]}
+                                            alt={`Frame at ${formatTime(point.timestamp)}`}
+                                            className=" object-cover rounded"
+                                            width={100}
+                                            height={48}
+                                        />
+                                    )}
+                                    <div className="text-xs text-gray-400 font-mono">
+                                        {formatTime(point.timestamp)}
+                                    </div>
                                 </div>
-                                </div>
-                               
+
 
                                 <div className="flex justify-end items-start">
+                                    <div className="flex justify-center items-center gap-1">
+                                        <div className="text-[10px] text-gray-500 font-semibold">
+                                        {Math.round(point.confidence * 100)}%
+                                    </div>
                                     <div
-                                        className={` p-1.5  rounded-full bg-black/40 ${getConfidenceColor(
+                                        className={` w-3 h-3 rounded-full bg-black/40 ${getConfidenceColor(
                                             point.confidence
                                         )}`}
                                     >
                                     </div>
+                                    </div>
+                                    
                                 </div>
                             </div>
-
-
-
 
                         </div>
                     ))
