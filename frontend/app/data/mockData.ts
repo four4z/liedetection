@@ -53,6 +53,29 @@ export const mockVideos: VideoItem[] = [
             { id: "point-3", timestamp: 28, confidence: 0.91, label: "โกหก" },
             { id: "point-4", timestamp: 42, confidence: 0.65, label: "ปกติ" }
         ]
+    },
+    {
+        id: "2",
+        userId: "user123",
+        originalFilename: "Momo",
+        durationSeconds: 120,
+        fileSize: 15728640,
+        uploadedAt: "2024-02-22T10:30:00Z",
+        isAnonymous: false,
+        isClaimed: true,
+        videoPath: "/videos/Test.mp4",
+        analysisResult: {
+            isLieDetected: true,
+            confidenceScore: 0.85,
+            status: "completed",
+            analyzedAt: "2024-02-22T10:45:00Z"
+        },
+        timeWarpPoints: [
+            { id: "point-1", timestamp: 5, confidence: 0.85, label: "สงสัย" },
+            { id: "point-2", timestamp: 15, confidence: 0.72, label: "เครียด" },
+            { id: "point-3", timestamp: 28, confidence: 0.91, label: "โกหก" },
+            { id: "point-4", timestamp: 42, confidence: 0.65, label: "ปกติ" }
+        ]
     }
     
 ];

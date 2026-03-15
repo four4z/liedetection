@@ -22,6 +22,7 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
     const [loading, setLoading] = useState(!propVideos);
     const [error, setError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
     const itemsPerPage = 6;
     const router = useRouter();
 
@@ -30,6 +31,15 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
             fetchVideos();
         }
     }, [propVideos]);
+
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+        setCurrentPage(1); // Reset to first page when searching
+    };
+
+    const filteredVideos = videos.filter(video =>
+        video.originalFilename.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     const fetchVideos = async () => {
         try {
@@ -143,10 +153,35 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
         );
     }
 
+    if (filteredVideos.length === 0 && searchTerm) {
+        return (
+            <div className="space-y-4">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-white">รายการวิดีโอ</h2>
+                </div>
+                <div>
+                    <input
+                        type="text"
+                        placeholder="ค้นหาวิดีโอ..."
+                        value={searchTerm}
+                        onChange={handleSearch}
+                        className="w-full p-2 text-white rounded-md border border-greay-custom focus:outline-none focus:ring-2 focus:ring-gray-700" />
+                </div>
+                <div className="text-center py-12">
+                    <div className="text-gray-400 mb-4">
+                        <Icon icon="mdi:magnify" width="48" height="48" />
+                    </div>
+                    <p className="text-white text-lg">ไม่พบวิดีโอที่ค้นหา</p>
+                    <p className="text-gray-400">ลองค้นหาด้วยคำอื่น</p>
+                </div>
+            </div>
+        );
+    }
+
     // pagination calculations
-    const totalPages = Math.ceil(videos.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredVideos.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedVideos = videos.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedVideos = filteredVideos.slice(startIndex, startIndex + itemsPerPage);
 
     const changePage = (page: number) => {
         if (page < 1 || page > totalPages) return;
@@ -163,6 +198,8 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
                 <input
                     type="text"
                     placeholder="ค้นหาวิดีโอ..."
+                    value={searchTerm}
+                    onChange={handleSearch}
                     className="w-full p-2 text-white rounded-md border border-greay-custom focus:outline-none focus:ring-2 focus:ring-gray-700" />
             </div>
             <div className="flex justify-end items-center">
