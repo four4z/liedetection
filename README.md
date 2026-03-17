@@ -7,7 +7,7 @@ A web application for detecting lies through video analysis using human pose det
 - **Frontend**: React + Vite
 - **Backend**: FastAPI (Python)
 - **Database**: MongoDB + GridFS
-- **AI**: MediaPipe Pose
+- **AI**: OpenPose
 
 ## Quick Start
 
