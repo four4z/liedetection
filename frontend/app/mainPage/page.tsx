@@ -78,18 +78,56 @@ const handleDeleteVideo = () => {
 
         setIsAnalyzing(true);
         try {
-            // TODO: ส่งวิดีโอไปยัง backend API
-            console.log("Starting analysis for:", file.name);
-            // const formData = new FormData();
-            // formData.append("video", file);
-            // const response = await fetch("/api/analyze", {
-            //     method: "POST",
-            //     body: formData,
-            // });
+            // Step 1: Upload video to S3
+            console.log("Uploading video to S3:", file.name);
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const uploadResponse = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!uploadResponse.ok) {
+                const error = await uploadResponse.json();
+                throw new Error(error.error || "Failed to upload video to S3");
+            }
+
+            const uploadData = await uploadResponse.json();
+            const s3VideoUrl = uploadData.videoUrl;
+
+            console.log("Video uploaded to S3:", s3VideoUrl);
+
+            // Step 2: Send S3 URL to backend for analysis
+            console.log("Sending S3 URL to backend for analysis");
+            const backendResponse = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/videos/upload`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        videoUrl: s3VideoUrl,
+                        title: file.name,
+                    }),
+                }
+            );
+
+            if (!backendResponse.ok) {
+                const error = await backendResponse.json();
+                throw new Error(error.detail || "Failed to submit video to backend");
+            }
+
+            const backendData = await backendResponse.json();
+            console.log("Video submission successful:", backendData);
+
+            alert("วิดีโอถูกส่งไปวิเคราะห์แล้ว");
+
             handleDeleteVideo();
         } catch (error) {
             console.error("Error analyzing video:", error);
-            alert("เกิดข้อผิดพลาดในการวิเคราะห์วิดีโอ");
+            alert(`เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : "Unknown error"}`);
         } finally {
             setIsAnalyzing(false);
         }
