@@ -1,0 +1,12 @@
+# --- Video / Audio processing ---
+moviepy==1.0.3
+
+silero-vad
+facenet-pytorch
+
+torch
+torchvision
+
+Pillow
+
+requests
