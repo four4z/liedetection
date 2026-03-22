@@ -63,6 +63,12 @@ class UserInDB(BaseModel):
 
 # ============ VIDEO MODELS ============
 
+class VideoLinkSubmit(BaseModel):
+    """For submitting a video URL"""
+    videoUrl: str
+    title: Optional[str] = None
+
+
 class VideoUpload(BaseModel):
     """Video metadata after upload"""
     id: str

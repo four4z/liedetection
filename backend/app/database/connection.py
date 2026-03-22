@@ -1,8 +1,11 @@
 import os
+from pathlib import Path
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env from this database folder
+env_path = Path(__file__).parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
 class Database:
     client: AsyncIOMotorClient = None
@@ -13,9 +16,17 @@ database = Database()
 
 async def connect_to_mongo():
     """Connect to MongoDB"""
-    mongo_url = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+    username = os.getenv("MONGO_USERNAME")
+    password = os.getenv("MONGO_PASSWORD")
+    host = os.getenv("MONGO_HOST", "localhost:27017")
     db_name = os.getenv("DATABASE_NAME", "liedetection")
-    
+
+    # Build connection URL
+    if username and password:
+        mongo_url = f"mongodb+srv://{username}:{password}@{host}/"
+    else:
+        mongo_url = f"mongodb://{host}/"
+
     database.client = AsyncIOMotorClient(mongo_url)
     database.db = database.client[db_name]
     database.gridfs = AsyncIOMotorGridFSBucket(database.db)
