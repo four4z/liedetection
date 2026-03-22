@@ -208,3 +208,9 @@ async def google_auth(auth_data: GoogleAuth):
 async def get_me(current_user: dict = Depends(get_current_user)):
     """Get current logged in user"""
     return user_to_response(current_user)
+
+
+@router.post("/logout")
+async def logout(current_user: dict = Depends(get_current_user)):
+    """Logout current user. Frontend should delete the stored token."""
+    return {"message": "Logged out successfully"}
