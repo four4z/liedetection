@@ -21,12 +21,12 @@ cp .env.example .env.local
 
 3. Update `.env.local` with your AWS credentials:
 ```
-AWS_ACCESS_KEY_ID=your_access_key
+AWS_ACCESS_KEY=your_access_key
 AWS_SECRET_ACCESS_KEY=your_secret_key
-AWS_S3_BUCKET_NAME=your_bucket_name
-AWS_REGION=us-east-1
+AWS_BUCKET_NAME=your_bucket_name
+AWS_BUCKET_REGION=ap-southeast-2
 NEXT_PUBLIC_API_URL=http://localhost:8000
-```
+`
 
 ### Running the Development Server
 

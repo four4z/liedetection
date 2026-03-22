@@ -101,7 +101,7 @@ const handleDeleteVideo = () => {
             // Step 2: Send S3 URL to backend for analysis
             console.log("Sending S3 URL to backend for analysis");
             const backendResponse = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/videos/upload`,
+                `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/upload`,
                 {
                     method: "POST",
                     headers: {

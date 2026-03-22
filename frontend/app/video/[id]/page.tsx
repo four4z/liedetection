@@ -62,7 +62,7 @@ export default function VideoDetailPage() {
                 if (videoData) {
                     setVideo(videoData as VideoDetail);
                     // Use videoPath from mock data
-                    setVideoUrl(videoData.videoPath || `/videos/video-${videoId}.mp4`);
+                    setVideoUrl(videoData.videoPath || `/video-${videoId}.mp4`);
                 } else {
                     throw new Error('ไม่พบวิดีโอนี้');
                 }
