@@ -1,30 +1,19 @@
 input: "image"
-input_dim: 1
-input_dim: 3
+input_dim: 1 # Original: 2
+input_dim: 3 # It crashes if not left to 3
 input_dim: 1 # Original: 368
 input_dim: 1 # Original: 368
-# input: "weights"
-# input_dim: 1
-# input_dim: 71
-# input_dim: 184
-# input_dim: 184
-# input: "labels"
-# input_dim: 1
-# input_dim: 71
-# input_dim: 184
-# input_dim: 184
-
 layer {
   name: "conv1_1"
   type: "Convolution"
   bottom: "image"
   top: "conv1_1"
   param {
-    lr_mult: 1
+    lr_mult: 1.0
     decay_mult: 1
   }
   param {
-    lr_mult: 2
+    lr_mult: 2.0
     decay_mult: 0
   }
   convolution_param {
@@ -32,16 +21,16 @@ layer {
     pad: 1
     kernel_size: 3
     weight_filler {
-      type: "gaussian"
-      std: 0.01
+      type: "xavier"
     }
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "conv1_1_re"
+  name: "relu1_1"
   type: "ReLU"
   bottom: "conv1_1"
   top: "conv1_1"
@@ -52,11 +41,11 @@ layer {
   bottom: "conv1_1"
   top: "conv1_2"
   param {
-    lr_mult: 1
+    lr_mult: 1.0
     decay_mult: 1
   }
   param {
-    lr_mult: 2
+    lr_mult: 2.0
     decay_mult: 0
   }
   convolution_param {
@@ -64,25 +53,25 @@ layer {
     pad: 1
     kernel_size: 3
     weight_filler {
-      type: "gaussian"
-      std: 0.01
+      type: "xavier"
     }
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "conv1_2_re"
+  name: "relu1_2"
   type: "ReLU"
   bottom: "conv1_2"
   top: "conv1_2"
 }
 layer {
-  name: "pool1"
+  name: "pool1_stage1"
   type: "Pooling"
   bottom: "conv1_2"
-  top: "pool1"
+  top: "pool1_stage1"
   pooling_param {
     pool: MAX
     kernel_size: 2
@@ -92,14 +81,14 @@ layer {
 layer {
   name: "conv2_1"
   type: "Convolution"
-  bottom: "pool1"
+  bottom: "pool1_stage1"
   top: "conv2_1"
   param {
-    lr_mult: 1
+    lr_mult: 1.0
     decay_mult: 1
   }
   param {
-    lr_mult: 2
+    lr_mult: 2.0
     decay_mult: 0
   }
   convolution_param {
@@ -107,16 +96,16 @@ layer {
     pad: 1
     kernel_size: 3
     weight_filler {
-      type: "gaussian"
-      std: 0.01
+      type: "xavier"
     }
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "conv2_1_re"
+  name: "relu2_1"
   type: "ReLU"
   bottom: "conv2_1"
   top: "conv2_1"
@@ -127,11 +116,11 @@ layer {
   bottom: "conv2_1"
   top: "conv2_2"
   param {
-    lr_mult: 1
+    lr_mult: 1.0
     decay_mult: 1
   }
   param {
-    lr_mult: 2
+    lr_mult: 2.0
     decay_mult: 0
   }
   convolution_param {
@@ -139,25 +128,25 @@ layer {
     pad: 1
     kernel_size: 3
     weight_filler {
-      type: "gaussian"
-      std: 0.01
+      type: "xavier"
     }
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "conv2_2_re"
+  name: "relu2_2"
   type: "ReLU"
   bottom: "conv2_2"
   top: "conv2_2"
 }
 layer {
-  name: "pool2"
+  name: "pool2_stage1"
   type: "Pooling"
   bottom: "conv2_2"
-  top: "pool2"
+  top: "pool2_stage1"
   pooling_param {
     pool: MAX
     kernel_size: 2
@@ -167,14 +156,14 @@ layer {
 layer {
   name: "conv3_1"
   type: "Convolution"
-  bottom: "pool2"
+  bottom: "pool2_stage1"
   top: "conv3_1"
   param {
-    lr_mult: 1
+    lr_mult: 1.0
     decay_mult: 1
   }
   param {
-    lr_mult: 2
+    lr_mult: 2.0
     decay_mult: 0
   }
   convolution_param {
@@ -182,16 +171,16 @@ layer {
     pad: 1
     kernel_size: 3
     weight_filler {
-      type: "gaussian"
-      std: 0.01
+      type: "xavier"
     }
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "conv3_1_re"
+  name: "relu3_1"
   type: "ReLU"
   bottom: "conv3_1"
   top: "conv3_1"
@@ -202,11 +191,11 @@ layer {
   bottom: "conv3_1"
   top: "conv3_2"
   param {
-    lr_mult: 1
+    lr_mult: 1.0
     decay_mult: 1
   }
   param {
-    lr_mult: 2
+    lr_mult: 2.0
     decay_mult: 0
   }
   convolution_param {
@@ -214,16 +203,16 @@ layer {
     pad: 1
     kernel_size: 3
     weight_filler {
-      type: "gaussian"
-      std: 0.01
+      type: "xavier"
     }
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "conv3_2_re"
+  name: "relu3_2"
   type: "ReLU"
   bottom: "conv3_2"
   top: "conv3_2"
@@ -234,11 +223,11 @@ layer {
   bottom: "conv3_2"
   top: "conv3_3"
   param {
-    lr_mult: 1
+    lr_mult: 1.0
     decay_mult: 1
   }
   param {
-    lr_mult: 2
+    lr_mult: 2.0
     decay_mult: 0
   }
   convolution_param {
@@ -246,16 +235,16 @@ layer {
     pad: 1
     kernel_size: 3
     weight_filler {
-      type: "gaussian"
-      std: 0.01
+      type: "xavier"
     }
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "conv3_3_re"
+  name: "relu3_3"
   type: "ReLU"
   bottom: "conv3_3"
   top: "conv3_3"
@@ -266,11 +255,11 @@ layer {
   bottom: "conv3_3"
   top: "conv3_4"
   param {
-    lr_mult: 1
+    lr_mult: 1.0
     decay_mult: 1
   }
   param {
-    lr_mult: 2
+    lr_mult: 2.0
     decay_mult: 0
   }
   convolution_param {
@@ -278,25 +267,25 @@ layer {
     pad: 1
     kernel_size: 3
     weight_filler {
-      type: "gaussian"
-      std: 0.01
+      type: "xavier"
     }
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "conv3_4_re"
+  name: "relu3_4"
   type: "ReLU"
   bottom: "conv3_4"
   top: "conv3_4"
 }
 layer {
-  name: "pool3"
+  name: "pool3_stage1"
   type: "Pooling"
   bottom: "conv3_4"
-  top: "pool3"
+  top: "pool3_stage1"
   pooling_param {
     pool: MAX
     kernel_size: 2
@@ -306,14 +295,14 @@ layer {
 layer {
   name: "conv4_1"
   type: "Convolution"
-  bottom: "pool3"
+  bottom: "pool3_stage1"
   top: "conv4_1"
   param {
-    lr_mult: 1
+    lr_mult: 1.0
     decay_mult: 1
   }
   param {
-    lr_mult: 2
+    lr_mult: 2.0
     decay_mult: 0
   }
   convolution_param {
@@ -321,16 +310,16 @@ layer {
     pad: 1
     kernel_size: 3
     weight_filler {
-      type: "gaussian"
-      std: 0.01
+      type: "xavier"
     }
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "conv4_1_re"
+  name: "relu4_1"
   type: "ReLU"
   bottom: "conv4_1"
   top: "conv4_1"
@@ -341,11 +330,11 @@ layer {
   bottom: "conv4_1"
   top: "conv4_2"
   param {
-    lr_mult: 1
+    lr_mult: 1.0
     decay_mult: 1
   }
   param {
-    lr_mult: 2
+    lr_mult: 2.0
     decay_mult: 0
   }
   convolution_param {
@@ -353,16 +342,16 @@ layer {
     pad: 1
     kernel_size: 3
     weight_filler {
-      type: "gaussian"
-      std: 0.01
+      type: "xavier"
     }
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "conv4_2_re"
+  name: "relu4_2"
   type: "ReLU"
   bottom: "conv4_2"
   top: "conv4_2"
@@ -373,11 +362,11 @@ layer {
   bottom: "conv4_2"
   top: "conv4_3"
   param {
-    lr_mult: 1
+    lr_mult: 1.0
     decay_mult: 1
   }
   param {
-    lr_mult: 2
+    lr_mult: 2.0
     decay_mult: 0
   }
   convolution_param {
@@ -385,16 +374,16 @@ layer {
     pad: 1
     kernel_size: 3
     weight_filler {
-      type: "gaussian"
-      std: 0.01
+      type: "xavier"
     }
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "conv4_3_re"
+  name: "relu4_3"
   type: "ReLU"
   bottom: "conv4_3"
   top: "conv4_3"
@@ -405,11 +394,11 @@ layer {
   bottom: "conv4_3"
   top: "conv4_4"
   param {
-    lr_mult: 1
+    lr_mult: 1.0
     decay_mult: 1
   }
   param {
-    lr_mult: 2
+    lr_mult: 2.0
     decay_mult: 0
   }
   convolution_param {
@@ -417,16 +406,16 @@ layer {
     pad: 1
     kernel_size: 3
     weight_filler {
-      type: "gaussian"
-      std: 0.01
+      type: "xavier"
     }
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "conv4_4_re"
+  name: "relu4_4"
   type: "ReLU"
   bottom: "conv4_4"
   top: "conv4_4"
@@ -437,11 +426,11 @@ layer {
   bottom: "conv4_4"
   top: "conv5_1"
   param {
-    lr_mult: 1
+    lr_mult: 1.0
     decay_mult: 1
   }
   param {
-    lr_mult: 2
+    lr_mult: 2.0
     decay_mult: 0
   }
   convolution_param {
@@ -449,16 +438,16 @@ layer {
     pad: 1
     kernel_size: 3
     weight_filler {
-      type: "gaussian"
-      std: 0.01
+      type: "xavier"
     }
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "conv5_1_re"
+  name: "relu5_1"
   type: "ReLU"
   bottom: "conv5_1"
   top: "conv5_1"
@@ -469,11 +458,11 @@ layer {
   bottom: "conv5_1"
   top: "conv5_2"
   param {
-    lr_mult: 1
+    lr_mult: 1.0
     decay_mult: 1
   }
   param {
-    lr_mult: 2
+    lr_mult: 2.0
     decay_mult: 0
   }
   convolution_param {
@@ -481,16 +470,16 @@ layer {
     pad: 1
     kernel_size: 3
     weight_filler {
-      type: "gaussian"
-      std: 0.01
+      type: "xavier"
     }
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "conv5_2_re"
+  name: "relu5_2"
   type: "ReLU"
   bottom: "conv5_2"
   top: "conv5_2"
@@ -501,11 +490,11 @@ layer {
   bottom: "conv5_2"
   top: "conv5_3_CPM"
   param {
-    lr_mult: 1
+    lr_mult: 1.0
     decay_mult: 1
   }
   param {
-    lr_mult: 2
+    lr_mult: 2.0
     decay_mult: 0
   }
   convolution_param {
@@ -519,10 +508,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "conv5_3_CPM_re"
+  name: "relu5_4_stage1_3"
   type: "ReLU"
   bottom: "conv5_3_CPM"
   top: "conv5_3_CPM"
@@ -533,11 +523,11 @@ layer {
   bottom: "conv5_3_CPM"
   top: "conv6_1_CPM"
   param {
-    lr_mult: 1
+    lr_mult: 1.0
     decay_mult: 1
   }
   param {
-    lr_mult: 2
+    lr_mult: 2.0
     decay_mult: 0
   }
   convolution_param {
@@ -551,10 +541,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "conv6_1_CPM_re"
+  name: "relu6_4_stage1_1"
   type: "ReLU"
   bottom: "conv6_1_CPM"
   top: "conv6_1_CPM"
@@ -565,15 +556,15 @@ layer {
   bottom: "conv6_1_CPM"
   top: "conv6_2_CPM"
   param {
-    lr_mult: 1
+    lr_mult: 1.0
     decay_mult: 1
   }
   param {
-    lr_mult: 2
+    lr_mult: 2.0
     decay_mult: 0
   }
   convolution_param {
-    num_output: 71
+    num_output: 22
     pad: 0
     kernel_size: 1
     weight_filler {
@@ -583,14 +574,15 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "features_in_stage_2"
+  name: "concat_stage2"
   type: "Concat"
   bottom: "conv6_2_CPM"
   bottom: "conv5_3_CPM"
-  top: "features_in_stage_2"
+  top: "concat_stage2"
   concat_param {
     axis: 1
   }
@@ -598,7 +590,7 @@ layer {
 layer {
   name: "Mconv1_stage2"
   type: "Convolution"
-  bottom: "features_in_stage_2"
+  bottom: "concat_stage2"
   top: "Mconv1_stage2"
   param {
     lr_mult: 4.0
@@ -619,10 +611,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv1_stage2_re"
+  name: "Mrelu1_2_stage2_1"
   type: "ReLU"
   bottom: "Mconv1_stage2"
   top: "Mconv1_stage2"
@@ -651,10 +644,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv2_stage2_re"
+  name: "Mrelu1_3_stage2_2"
   type: "ReLU"
   bottom: "Mconv2_stage2"
   top: "Mconv2_stage2"
@@ -683,10 +677,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv3_stage2_re"
+  name: "Mrelu1_4_stage2_3"
   type: "ReLU"
   bottom: "Mconv3_stage2"
   top: "Mconv3_stage2"
@@ -715,10 +710,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv4_stage2_re"
+  name: "Mrelu1_5_stage2_4"
   type: "ReLU"
   bottom: "Mconv4_stage2"
   top: "Mconv4_stage2"
@@ -747,10 +743,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv5_stage2_re"
+  name: "Mrelu1_6_stage2_5"
   type: "ReLU"
   bottom: "Mconv5_stage2"
   top: "Mconv5_stage2"
@@ -779,10 +776,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv6_stage2_re"
+  name: "Mrelu1_7_stage2_6"
   type: "ReLU"
   bottom: "Mconv6_stage2"
   top: "Mconv6_stage2"
@@ -801,7 +799,7 @@ layer {
     decay_mult: 0
   }
   convolution_param {
-    num_output: 71
+    num_output: 22
     pad: 0
     kernel_size: 1
     weight_filler {
@@ -811,14 +809,15 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "features_in_stage_3"
+  name: "concat_stage3"
   type: "Concat"
   bottom: "Mconv7_stage2"
   bottom: "conv5_3_CPM"
-  top: "features_in_stage_3"
+  top: "concat_stage3"
   concat_param {
     axis: 1
   }
@@ -826,7 +825,7 @@ layer {
 layer {
   name: "Mconv1_stage3"
   type: "Convolution"
-  bottom: "features_in_stage_3"
+  bottom: "concat_stage3"
   top: "Mconv1_stage3"
   param {
     lr_mult: 4.0
@@ -847,10 +846,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv1_stage3_re"
+  name: "Mrelu1_2_stage3_1"
   type: "ReLU"
   bottom: "Mconv1_stage3"
   top: "Mconv1_stage3"
@@ -879,10 +879,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv2_stage3_re"
+  name: "Mrelu1_3_stage3_2"
   type: "ReLU"
   bottom: "Mconv2_stage3"
   top: "Mconv2_stage3"
@@ -911,10 +912,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv3_stage3_re"
+  name: "Mrelu1_4_stage3_3"
   type: "ReLU"
   bottom: "Mconv3_stage3"
   top: "Mconv3_stage3"
@@ -943,10 +945,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv4_stage3_re"
+  name: "Mrelu1_5_stage3_4"
   type: "ReLU"
   bottom: "Mconv4_stage3"
   top: "Mconv4_stage3"
@@ -975,10 +978,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv5_stage3_re"
+  name: "Mrelu1_6_stage3_5"
   type: "ReLU"
   bottom: "Mconv5_stage3"
   top: "Mconv5_stage3"
@@ -1007,10 +1011,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv6_stage3_re"
+  name: "Mrelu1_7_stage3_6"
   type: "ReLU"
   bottom: "Mconv6_stage3"
   top: "Mconv6_stage3"
@@ -1029,7 +1034,7 @@ layer {
     decay_mult: 0
   }
   convolution_param {
-    num_output: 71
+    num_output: 22
     pad: 0
     kernel_size: 1
     weight_filler {
@@ -1039,14 +1044,15 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "features_in_stage_4"
+  name: "concat_stage4"
   type: "Concat"
   bottom: "Mconv7_stage3"
   bottom: "conv5_3_CPM"
-  top: "features_in_stage_4"
+  top: "concat_stage4"
   concat_param {
     axis: 1
   }
@@ -1054,7 +1060,7 @@ layer {
 layer {
   name: "Mconv1_stage4"
   type: "Convolution"
-  bottom: "features_in_stage_4"
+  bottom: "concat_stage4"
   top: "Mconv1_stage4"
   param {
     lr_mult: 4.0
@@ -1075,10 +1081,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv1_stage4_re"
+  name: "Mrelu1_2_stage4_1"
   type: "ReLU"
   bottom: "Mconv1_stage4"
   top: "Mconv1_stage4"
@@ -1107,10 +1114,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv2_stage4_re"
+  name: "Mrelu1_3_stage4_2"
   type: "ReLU"
   bottom: "Mconv2_stage4"
   top: "Mconv2_stage4"
@@ -1139,10 +1147,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv3_stage4_re"
+  name: "Mrelu1_4_stage4_3"
   type: "ReLU"
   bottom: "Mconv3_stage4"
   top: "Mconv3_stage4"
@@ -1171,10 +1180,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv4_stage4_re"
+  name: "Mrelu1_5_stage4_4"
   type: "ReLU"
   bottom: "Mconv4_stage4"
   top: "Mconv4_stage4"
@@ -1203,10 +1213,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv5_stage4_re"
+  name: "Mrelu1_6_stage4_5"
   type: "ReLU"
   bottom: "Mconv5_stage4"
   top: "Mconv5_stage4"
@@ -1235,10 +1246,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv6_stage4_re"
+  name: "Mrelu1_7_stage4_6"
   type: "ReLU"
   bottom: "Mconv6_stage4"
   top: "Mconv6_stage4"
@@ -1257,7 +1269,7 @@ layer {
     decay_mult: 0
   }
   convolution_param {
-    num_output: 71
+    num_output: 22
     pad: 0
     kernel_size: 1
     weight_filler {
@@ -1267,14 +1279,15 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "features_in_stage_5"
+  name: "concat_stage5"
   type: "Concat"
   bottom: "Mconv7_stage4"
   bottom: "conv5_3_CPM"
-  top: "features_in_stage_5"
+  top: "concat_stage5"
   concat_param {
     axis: 1
   }
@@ -1282,7 +1295,7 @@ layer {
 layer {
   name: "Mconv1_stage5"
   type: "Convolution"
-  bottom: "features_in_stage_5"
+  bottom: "concat_stage5"
   top: "Mconv1_stage5"
   param {
     lr_mult: 4.0
@@ -1303,10 +1316,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv1_stage5_re"
+  name: "Mrelu1_2_stage5_1"
   type: "ReLU"
   bottom: "Mconv1_stage5"
   top: "Mconv1_stage5"
@@ -1335,10 +1349,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv2_stage5_re"
+  name: "Mrelu1_3_stage5_2"
   type: "ReLU"
   bottom: "Mconv2_stage5"
   top: "Mconv2_stage5"
@@ -1367,10 +1382,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv3_stage5_re"
+  name: "Mrelu1_4_stage5_3"
   type: "ReLU"
   bottom: "Mconv3_stage5"
   top: "Mconv3_stage5"
@@ -1399,10 +1415,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv4_stage5_re"
+  name: "Mrelu1_5_stage5_4"
   type: "ReLU"
   bottom: "Mconv4_stage5"
   top: "Mconv4_stage5"
@@ -1431,10 +1448,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv5_stage5_re"
+  name: "Mrelu1_6_stage5_5"
   type: "ReLU"
   bottom: "Mconv5_stage5"
   top: "Mconv5_stage5"
@@ -1463,10 +1481,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv6_stage5_re"
+  name: "Mrelu1_7_stage5_6"
   type: "ReLU"
   bottom: "Mconv6_stage5"
   top: "Mconv6_stage5"
@@ -1485,7 +1504,7 @@ layer {
     decay_mult: 0
   }
   convolution_param {
-    num_output: 71
+    num_output: 22
     pad: 0
     kernel_size: 1
     weight_filler {
@@ -1495,14 +1514,15 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "features_in_stage_6"
+  name: "concat_stage6"
   type: "Concat"
   bottom: "Mconv7_stage5"
   bottom: "conv5_3_CPM"
-  top: "features_in_stage_6"
+  top: "concat_stage6"
   concat_param {
     axis: 1
   }
@@ -1510,7 +1530,7 @@ layer {
 layer {
   name: "Mconv1_stage6"
   type: "Convolution"
-  bottom: "features_in_stage_6"
+  bottom: "concat_stage6"
   top: "Mconv1_stage6"
   param {
     lr_mult: 4.0
@@ -1531,10 +1551,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv1_stage6_re"
+  name: "Mrelu1_2_stage6_1"
   type: "ReLU"
   bottom: "Mconv1_stage6"
   top: "Mconv1_stage6"
@@ -1563,10 +1584,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv2_stage6_re"
+  name: "Mrelu1_3_stage6_2"
   type: "ReLU"
   bottom: "Mconv2_stage6"
   top: "Mconv2_stage6"
@@ -1595,10 +1617,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv3_stage6_re"
+  name: "Mrelu1_4_stage6_3"
   type: "ReLU"
   bottom: "Mconv3_stage6"
   top: "Mconv3_stage6"
@@ -1627,10 +1650,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv4_stage6_re"
+  name: "Mrelu1_5_stage6_4"
   type: "ReLU"
   bottom: "Mconv4_stage6"
   top: "Mconv4_stage6"
@@ -1659,10 +1683,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv5_stage6_re"
+  name: "Mrelu1_6_stage6_5"
   type: "ReLU"
   bottom: "Mconv5_stage6"
   top: "Mconv5_stage6"
@@ -1691,10 +1716,11 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
 layer {
-  name: "Mconv6_stage6_re"
+  name: "Mrelu1_7_stage6_6"
   type: "ReLU"
   bottom: "Mconv6_stage6"
   top: "Mconv6_stage6"
@@ -1714,7 +1740,7 @@ layer {
     decay_mult: 0
   }
   convolution_param {
-    num_output: 71
+    num_output: 22
     pad: 0
     kernel_size: 1
     weight_filler {
@@ -1724,5 +1750,7 @@ layer {
     bias_filler {
       type: "constant"
     }
+    dilation: 1
   }
 }
+
