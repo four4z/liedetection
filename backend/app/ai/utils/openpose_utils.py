@@ -6,9 +6,12 @@ def run_openpose(subclip_path):
     command = [
         OPENPOSE_EXE,
         "--video", subclip_path,
-        "--face",
+        # # Comments out if use only frames for AI
+        # "--face",
         "--write_json", TEMP_JSONS,
-        "--net_resolution", "-1x128", 
+        # Can adjust the resolution higher for keypoints detection accuracy if ignore face models.
+        # With Face Model, Recommended at -1x128 for 6GB GPU
+        "--net_resolution", "-1x176", 
         "--display", "0",
         "--render_pose", "0",
     ]
