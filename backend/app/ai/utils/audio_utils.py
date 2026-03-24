@@ -3,7 +3,7 @@ import math
 import torch
 import moviepy.editor as mp
 from silero_vad import load_silero_vad, read_audio, get_speech_timestamps
-from config import TEMP_AUDIO
+from app.ai.config import TEMP_AUDIO
 
 # VAD Post-processing thresholds
 MERGE_GAP_MS = 400   # ms: merge consecutive segments whose gap is less than this

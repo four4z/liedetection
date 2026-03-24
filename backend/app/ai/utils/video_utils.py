@@ -11,7 +11,7 @@ import moviepy.editor as mp
 from numpy.linalg import norm
 from collections import defaultdict
 from facenet_pytorch import InceptionResnetV1
-from config import TEMP_JSONS, TEMP_FRAMES
+from app.ai.config import TEMP_JSONS, TEMP_FRAMES
 
 # --- FaceNet model — loaded once, placed on GPU when available ---
 _facenet_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -406,8 +406,69 @@ def extract_and_crop_roi(subclip_path):
     # ---------------------------------------------------------
     # IDENTIFY THE MAIN SPEAKER & PROMOTE THEIR FRAMES
     # ---------------------------------------------------------
-    sorted_people  = sorted(person_frame_counts.items(), key=lambda x: x[1], reverse=True)
-    main_person_id, total_valid_frames = sorted_people[0]
+    # Helper: compute average FaceNet embedding cosine distance between
+    # consecutive sampled face frames (stride=5, always includes the last
+    # frame).  High distance → face is visibly changing (mouth movement,
+    # expressions) → strong proxy for the active speaker.
+    def _compute_avg_embedding_diff(pid):
+        face_dir = os.path.join(staging_dir, pid, "face")
+        if not os.path.isdir(face_dir):
+            return 0.0
+
+        all_frames = sorted([f for f in os.listdir(face_dir) if f.endswith(".jpg")])
+        if len(all_frames) < 2:
+            return 0.0
+
+        # Stride-5 indices, always appending the very last frame index
+        stride = 5
+        indices = list(range(0, len(all_frames), stride))
+        if (len(all_frames) - 1) not in indices:
+            indices.append(len(all_frames) - 1)
+
+        sampled_paths = [os.path.join(face_dir, all_frames[i]) for i in indices]
+
+        # Load as BGR ROIs
+        rois = []
+        for path in sampled_paths:
+            img = cv2.imread(path)
+            rois.append(img if img is not None else np.zeros((112, 112, 3), dtype=np.uint8))
+
+        # Batch embed via existing FaceNet pipeline
+        embeddings = _embed_batch(rois)
+
+        # Average cosine distance between consecutive valid embedding pairs
+        dists = []
+        for i in range(len(embeddings) - 1):
+            e1, e2 = embeddings[i], embeddings[i + 1]
+            if e1 is None or e2 is None:
+                continue
+            cosine_sim = float(np.dot(e1, e2))   # both are L2-normalised
+            dists.append(1.0 - cosine_sim)        # distance: 0 = identical, 2 = opposite
+
+        return float(np.mean(dists)) if dists else 0.0
+
+    if len(person_frame_counts) == 1:
+        # Only one person — no need to compare
+        main_person_id = next(iter(person_frame_counts))
+    else:
+        # Score = frame_count × avg_embedding_cosine_distance
+        # Rewards people who appear often AND whose face embeddings change
+        # across frames (mouth movement, expressions → active speaker).
+        motion_scores = {
+            pid: person_frame_counts[pid] * _compute_avg_embedding_diff(pid)
+            for pid in person_frame_counts
+        }
+        print(f"  -> Speaker candidate scores (frames × motion): "
+              + ", ".join(f"{pid}={s:.2f}" for pid, s in motion_scores.items()))
+
+        if all(v == 0.0 for v in motion_scores.values()):
+            # Fallback: every candidate is static — revert to raw frame count
+            print("  -> All motion scores zero; falling back to raw frame count.")
+            main_person_id = max(person_frame_counts, key=person_frame_counts.get)
+        else:
+            main_person_id = max(motion_scores, key=motion_scores.get)
+
+    total_valid_frames = person_frame_counts[main_person_id]
     print(f"  -> Identified {main_person_id} as the main speaker ({total_valid_frames} frames).")
 
     # Log appearance

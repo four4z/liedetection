@@ -2,34 +2,42 @@ import os
 import shutil
 import numpy as np
 import base64
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse
 
 # Import Configurations & Utilities
-from config import TEMP_SUBCLIP, TEMP_ROOT, TEMP_FRAMES
-from utils.file_utils import setup_temp_dirs, cleanup_temp_dirs, final_cleanup
-from utils.audio_utils import get_audio_timestamps
-from utils.video_utils import create_subclip, extract_and_crop_roi, download_video, reset_identity_bank, advance_segment, clear_gpu_cache
-from utils.openpose_utils import run_openpose
-from inference.predictor import load_model_and_config, infer_segment
+from app.ai.config import TEMP_SUBCLIP, TEMP_ROOT, TEMP_FRAMES
+from app.ai.utils.file_utils import setup_temp_dirs, cleanup_temp_dirs, final_cleanup
+from app.ai.utils.audio_utils import get_audio_timestamps
+from app.ai.utils.video_utils import create_subclip, extract_and_crop_roi, download_video, reset_identity_bank, advance_segment, clear_gpu_cache
+from app.ai.utils.openpose_utils import run_openpose
+from app.ai.inference.predictor import load_model_and_config, infer_segment
 
-app = FastAPI(title="Deception Detection API", description="Multimodal Face & Arms Inference")
+router = APIRouter()
 
-global_model = None
-global_config = None
+# --- Lazy-loaded model globals ---
+_global_model = None
+_global_config = None
 
-@app.on_event("startup")
-def startup_event():
-    global global_model, global_config
-    print("Starting API Server: Loading PyTorch Models into memory...")
-    global_model, global_config = load_model_and_config(manual_seq_len=None, manual_threshold=None)
-    print("Models successfully loaded and ready for inference.")
 
-@app.post("/analyze-video")
+def _ensure_model_loaded():
+    """Load model once on first inference call, then cache globally."""
+    global _global_model, _global_config
+    if _global_model is None or _global_config is None:
+        print("Lazy-loading PyTorch models into memory...")
+        _global_model, _global_config = load_model_and_config(
+            manual_seq_len=None, manual_threshold=None
+        )
+        print("Models successfully loaded and ready for inference.")
+
+
+@router.post("/analyze-video")
 async def analyze_video(
     file: UploadFile = File(None),
     video_url: str = Form(None)
 ):
+    _ensure_model_loaded()
+
     setup_temp_dirs()
     reset_identity_bank()  # wipe identity state from any previous video
 
@@ -60,7 +68,7 @@ async def analyze_video(
         }
 
         segment_strongest_probs = []
-        threshold = global_config['SIGMOID_THRESHOLD']
+        threshold = _global_config['SIGMOID_THRESHOLD']
 
         def format_conf(p, thresh):
             display_p = p if p > thresh else (1.0 - p)
@@ -78,7 +86,7 @@ async def analyze_video(
             if valid_frames == 0:
                 continue
 
-            result = infer_segment(global_model, global_config)
+            result = infer_segment(_global_model, _global_config)
 
             if result is not None:
                 segment_strongest_probs.append(result["strongest_confidence_score"])

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import auth, videos, history
+from app.ai.api import router as ai_router
 from app.database.connection import connect_to_mongo, close_mongo_connection
 
 app = FastAPI(
@@ -31,6 +32,7 @@ async def shutdown():
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(videos.router, prefix="/api/videos", tags=["Videos"])
 app.include_router(history.router, prefix="/api/history", tags=["History"])
+app.include_router(ai_router, prefix="/api/ai", tags=["AI"])
 
 @app.get("/")
 async def root():

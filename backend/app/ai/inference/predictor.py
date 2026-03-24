@@ -11,8 +11,8 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models_structure'))
 
 # Import the newly refactored dynamic models
-from models import DynamicFaceLSTM, DynamicArmsLSTM, ModalityFeatureExtractor, MultimodalPipeline
-from config import FACE_MODEL_CONFIG_PATH, FACE_MODEL_WEIGHT_PATH, ARMS_MODEL_WEIGHT_PATH, DEVICE, TEMP_FRAMES
+from app.ai.models_structure.models import DynamicFaceLSTM, DynamicArmsLSTM, ModalityFeatureExtractor, MultimodalPipeline
+from app.ai.config import FACE_MODEL_CONFIG_PATH, FACE_MODEL_WEIGHT_PATH, ARMS_MODEL_WEIGHT_PATH, DEVICE, TEMP_FRAMES
 
 
 def load_model_and_config(manual_seq_len=None, manual_threshold=None):

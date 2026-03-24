@@ -1,6 +1,6 @@
 import os
 import shutil
-from config import TEMP_ROOT, TEMP_JSONS, TEMP_FRAMES, TEMP_SUBCLIP
+from app.ai.config import TEMP_ROOT, TEMP_JSONS, TEMP_FRAMES, TEMP_SUBCLIP
 
 def setup_temp_dirs():
     """Creates temporary directories for fresh processing."""

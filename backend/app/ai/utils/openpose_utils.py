@@ -1,21 +1,37 @@
+import os
 import subprocess
-from config import OPENPOSE_EXE, TEMP_JSONS
+from app.ai.config import OPENPOSE_EXE, OPENPOSE_DIR, TEMP_JSONS
 
 def run_openpose(subclip_path):
-    """Triggers the OpenPose executable via subprocess."""
+    """Triggers the OpenPose executable via subprocess.
+
+    OpenPose requires the working directory to be the app/ai root so that
+    its relative model paths (models/, bin/, etc.) resolve correctly.
+    This function temporarily changes cwd to OPENPOSE_DIR, runs the
+    process, then restores the original working directory.
+    """
+    # Use absolute path for TEMP_JSONS — it's already absolute from config,
+    # but resolve here explicitly in case the caller supplies a relative path.
+    abs_json_out  = os.path.abspath(TEMP_JSONS)
+    abs_video_in  = os.path.abspath(subclip_path)
+
     command = [
         OPENPOSE_EXE,
-        "--video", subclip_path,
-        # # Comments out if use only frames for AI
-        # "--face",
-        "--write_json", TEMP_JSONS,
-        # Can adjust the resolution higher for keypoints detection accuracy if ignore face models.
-        # With Face Model, Recommended at -1x128 for 6GB GPU
-        "--net_resolution", "-1x176", 
-        "--display", "0",
+        "--video", abs_video_in,
+        # "--face",   # uncomment to enable OpenPose face keypoints
+        "--write_json", abs_json_out,
+        # With Face Model, recommended -1x128 for 6 GB GPU
+        "--net_resolution", "-1x176",
+        "--display",     "0",
         "--render_pose", "0",
     ]
+
+    original_dir = os.getcwd()
     try:
-        subprocess.run(command, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        os.chdir(OPENPOSE_DIR)
+        subprocess.run(command, shell=True, check=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
         print(f"OpenPose error: {e}")
+    finally:
+        os.chdir(original_dir)
