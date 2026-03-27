@@ -88,12 +88,10 @@
 
 .visual-card {
     min-width: 200px;
-      background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.04),
-    rgba(255, 255, 255, 0.01)
-  );
-   border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04),
+            rgba(255, 255, 255, 0.01));
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-lg);
     padding: 1.5rem 2rem;
     text-align: center;
@@ -104,7 +102,7 @@
 .visual-card:hover {
     transform: translateY(-4px);
 
-  border-color: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.16);
 }
 
 .visual-icon {
@@ -142,12 +140,10 @@
 }
 
 .feature-card {
-      background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.04),
-    rgba(255, 255, 255, 0.01)
-  );
-   border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04),
+            rgba(255, 255, 255, 0.01));
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-lg);
     padding: 2rem;
     text-align: center;

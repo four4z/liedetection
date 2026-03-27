@@ -2,12 +2,10 @@
 
 import React, { useState } from "react";
 import { Icon } from "@iconify/react";
-import Register from "./Register";
 import Link from "next/link";
-type AuthMode = "login" | "register";
 
-function Login() {
-    const [mode, setMode] = useState<AuthMode>("login");
+function page() {
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
@@ -51,9 +49,8 @@ function Login() {
         }
     };
     return (
-
-        <div className="min-h-screen flex items-center justify-center ">
-            {mode === "login" ? (
+        <div className=' flex justify-center items-center min-h-screen'>
+            <div className="min-h-screen flex items-center justify-center ">
                 <div className="w-full max-w-sm bg-dark-custom border border-dark-custom rounded-3xl shadow-lg p-12 text-white">
                     <Link href="/" className="flex items-center mb-6">
                         <Icon icon="weui:back-outlined" width="12" height="24" />
@@ -114,20 +111,16 @@ function Login() {
 
                     <p className="mt-6 text-center text-sm text-white/60">
                         Don’t have an account yet?{" "}
-                        <span
-
-                            onClick={() => setMode("register")}
+                        <Link href="/Register"
                             className="text-blue-400 hover:underline cursor-pointer">
                             Register
-                        </span>
+                        </Link>
                     </p>
                 </div>
-            ) : (
-                <Register setMode={setMode} />
-            )}
-        </div>
 
-    );
+            </div>
+        </div>
+    )
 }
 
-export default Login;
+export default page

@@ -52,8 +52,11 @@ export default function Home() {
                   Sign in
                 </button>
               </Link> */}
-              <Link href="/authPage">
+              <Link href="/Login">
                 <button className="cursor-pointer border-glass-custom bg-glass-custom p-2 px-6 rounded-xl duration-300 hover:text-blue-200 hover:border-blue-200">Sign in</button>
+              </Link>
+              <Link href="/Register">
+                <button className="cursor-pointer border-glass-custom bg-white text-black p-2 px-6 rounded-xl duration-300 hover:bg-white/80">Sign up</button>
               </Link>
             </div>
           </div>
