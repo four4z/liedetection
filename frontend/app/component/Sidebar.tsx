@@ -23,7 +23,7 @@ export default function Sidebar({ children }: SidebarProps) {
     const menuItems = [
         {
             label: "Home",
-            href: "/mainPage",
+            href: "/main",
             icon: "mdi:home",
         },
         {

@@ -2,7 +2,7 @@
 import React, { useState, useRef } from "react";
 import { Icon } from "@iconify/react";
 
-export default function MainPage() {
+export default function Main() {
     const [file, setFile] = useState<File | null>(null);
     const [videoUrl, setVideoUrl] = useState<string | undefined>(undefined);
     const [dragActive, setDragActive] = useState(false);
