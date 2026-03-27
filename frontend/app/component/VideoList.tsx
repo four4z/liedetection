@@ -2,8 +2,17 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
-import { mockVideos, VideoItem } from "../data/mockData";
+import { authFetch } from "../tokens/authFetch";
 import Image from "next/image";
+
+interface VideoItem {
+    id: string;
+    originalFilename: string;
+    fileSize: number;
+    uploadedAt: string;
+    status?: string;
+    videoPath?: string;
+}
 
 interface AnalysisResult {
     isLieDetected: boolean;
@@ -44,18 +53,9 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
     const fetchVideos = async () => {
         try {
             setLoading(true);
-
-            // Simulate API delay
-            setTimeout(() => {
-                setVideos(mockVideos);
-                setLoading(false);
-            }, 1000);
-
-            /*
-            // Real API call - commented out for development
-            const response = await fetch('/api/videos', {
-                credentials: 'include'
-            });
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+            
+            const response = await authFetch(`${API_BASE_URL}/api/videos`);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch videos');
@@ -63,11 +63,11 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
 
             const data = await response.json();
             setVideos(data);
-            */
+            setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
         } finally {
-            // setLoading(false); // Commented out because setTimeout handles this
+            setLoading(false);
         }
     };
 

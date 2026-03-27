@@ -2,8 +2,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
-import { getMockVideoById, VideoItem, TimeWarpPoint } from "../../data/mockData";
+import { authFetch } from "../../tokens/authFetch";
 import TimewarpTimeline from "../../component/TimewarpTimeline";
+
+interface TimeWarpPoint {
+    id: string;
+    timestamp: number;
+    confidence: number;
+    label: string;
+    thumbnail?: string;
+}
 
 interface AnalysisResult {
     video: string;
@@ -55,25 +63,9 @@ export default function VideoDetailPage() {
     const fetchVideoDetail = async () => {
         try {
             setLoading(true);
-
-            // Simulate API delay
-            setTimeout(() => {
-                const videoData = getMockVideoById(videoId);
-                if (videoData) {
-                    setVideo(videoData as VideoDetail);
-                    // Use videoPath from mock data
-                    setVideoUrl(videoData.videoPath || `/video-${videoId}.mp4`);
-                } else {
-                    throw new Error('ไม่พบวิดีโอนี้');
-                }
-                setLoading(false);
-            }, 1000);
-
-            /*
-            // Real API call - commented out for development
-            const response = await fetch(`/api/videos/${videoId}`, {
-                credentials: 'include'
-            });
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+            
+            const response = await authFetch(`${API_BASE_URL}/api/videos/${videoId}`);
 
             if (!response.ok) {
                 if (response.status === 404) {
@@ -84,20 +76,11 @@ export default function VideoDetailPage() {
 
             const data = await response.json();
             setVideo(data);
-
-            // Fetch video stream URL
-            const streamResponse = await fetch(`/api/videos/${videoId}/stream`, {
-                credentials: 'include'
-            });
-
-            if (streamResponse.ok) {
-                setVideoUrl(streamResponse.url);
-            }
-            */
+            setVideoUrl(data.videoPath || `/video-${videoId}.mp4`);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
         } finally {
-            // setLoading(false); // Commented out because setTimeout handles this
+            setLoading(false);
         }
     };
 

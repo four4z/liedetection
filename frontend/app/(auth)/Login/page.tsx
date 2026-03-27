@@ -3,9 +3,11 @@
 import React, { useState } from "react";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
+import { setToken } from "../../tokens/token";
+import { useAuth } from "../../tokens/AuthProvider";
 
 function page() {
-
+    const { setUser, setTokenState } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
@@ -29,7 +31,8 @@ function page() {
             }
 
             // ✅ เก็บ token
-            localStorage.setItem("token", data.access_token);
+            setToken(data.access_token);
+            setTokenState(data.access_token);
 
             // ✅ ลองเรียก /me ต่อเลย
             const meRes = await fetch("http://127.0.0.1:8000/api/auth/me", {
@@ -39,7 +42,9 @@ function page() {
             });
 
             const meData = await meRes.json();
-            console.log("USER:", meData);
+            if (meRes.ok) {
+                setUser(meData);
+            }
 
             // ✅ redirect
             window.location.href = "/";

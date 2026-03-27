@@ -3,8 +3,11 @@
 import React, { useState } from "react";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
+import { setToken } from "../../tokens/token";
+import { useAuth } from "../../tokens/AuthProvider";
 
 function page() {
+    const { setUser, setTokenState } = useAuth();
     const [email, setEmail] = useState("");
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
@@ -43,7 +46,21 @@ function page() {
                 throw new Error(data.detail || "Register failed");
             }
 
-            localStorage.setItem("token", data.access_token);
+            setToken(data.access_token);
+            setTokenState(data.access_token);
+
+            // ✅ Fetch /me to get user data
+            const meRes = await fetch("http://127.0.0.1:8000/api/auth/me", {
+                headers: {
+                    Authorization: `Bearer ${data.access_token}`,
+                },
+            });
+
+            const meData = await meRes.json();
+            if (meRes.ok) {
+                setUser(meData);
+            }
+
             window.location.href = "/";
         } catch (err: any) {
             alert(err.message);

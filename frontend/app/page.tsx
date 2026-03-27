@@ -1,41 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Footer from "./component/Footer";
 import Link from "next/link";
+import { authFetch } from "./tokens/authFetch";
+import { useAuth } from "./tokens/AuthProvider";
 
 export default function Home() {
-  const [user, setUser] = useState<any>(null);
+  const { isLogin, user } = useAuth();
 
-  useEffect(() => {
-    const fetchMe = async () => {
-      const token = localStorage.getItem("token");
-
-      if (token) {
-        console.log("TOKEN:", token);
-      } else {
-        console.log("No token");
-      }
-
-      if (!token) return;
-
-      try {
-        const res = await fetch("http://127.0.0.1:8000/api/auth/me", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = await res.json();
-        setUser(data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchMe();
-  }, []);
   return (
     <>
       <div className="bg-dark-gradient min-h-screen text-white relative overflow-hidden">
@@ -78,7 +51,7 @@ export default function Home() {
                   Start Analysis →
                 </Link>
                 <Link href="/Login" className="btn-primary btn-lg">
-                  Access Account
+                  {isLogin ? (user ? `Welcome ${user.email}` : "Loading account...") : "Access Account"}
                 </Link>
               </div>
 

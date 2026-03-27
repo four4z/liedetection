@@ -2,8 +2,15 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Icon } from "@iconify/react";
-import { TimeWarpPoint } from "../data/mockData";
 import Image from "next/image";
+
+interface TimeWarpPoint {
+    id: string;
+    timestamp: number;
+    confidence: number;
+    label: string;
+    thumbnail?: string;
+}
 
 
 interface TimewarpTimelineProps {
