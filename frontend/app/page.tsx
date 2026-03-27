@@ -1,10 +1,41 @@
 "use client";
-import React from "react";
+
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Footer from "./component/Footer";
 import Link from "next/link";
 
 export default function Home() {
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchMe = async () => {
+      const token = localStorage.getItem("token");
+
+      if (token) {
+        console.log("TOKEN:", token);
+      } else {
+        console.log("No token");
+      }
+
+      if (!token) return;
+
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/auth/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+        setUser(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchMe();
+  }, []);
   return (
     <>
       <div className="bg-dark-gradient min-h-screen text-white relative overflow-hidden">
@@ -37,7 +68,7 @@ export default function Home() {
               </h1>
               <p className="hero-subtitle">
                 Upload a video and our AI will analyze body language patterns
-                to detect <br/> potential signs of deception.
+                to detect <br /> potential signs of deception.
               </p>
               <div className="hero-actions">
                 <Link href="/mainPage" className="btn-main btn-lg">
@@ -49,47 +80,47 @@ export default function Home() {
               </div>
 
               <div className="hero-visual flex justify-center items-center mt-16">
-                        <div className="visual-card mx-5">
-                            <div className="visual-icon">🎥</div>
-                            <div className="visual-step">1. Upload Video</div>
-                        </div>
-                        <div className="visual-arrow">→</div>
-                        <div className="visual-card mx-5">
-                            <div className="visual-icon">🤖</div>
-                            <div className="visual-step">2. AI Analysis</div>
-                        </div>
-                        <div className="visual-arrow">→</div>
-                        <div className="visual-card mx-5">
-                            <div className="visual-icon">📊</div>
-                            <div className="visual-step">3. Get Results</div>
-                        </div>
-                    </div>
+                <div className="visual-card mx-5">
+                  <div className="visual-icon">🎥</div>
+                  <div className="visual-step">1. Upload Video</div>
+                </div>
+                <div className="visual-arrow">→</div>
+                <div className="visual-card mx-5">
+                  <div className="visual-icon">🤖</div>
+                  <div className="visual-step">2. AI Analysis</div>
+                </div>
+                <div className="visual-arrow">→</div>
+                <div className="visual-card mx-5">
+                  <div className="visual-icon">📊</div>
+                  <div className="visual-step">3. Get Results</div>
+                </div>
+              </div>
 
               <div className="pt-10">
-                    <h2 className="section-title">How It Works</h2>
-                    <div className="features-grid">
-                        <div className="feature-card">
-                            <div className="feature-icon">🧠</div>
-                            <h3>AI-Powered Analysis</h3>
-                            <p>Uses MediaPipe pose detection to analyze body language patterns in real-time.</p>
-                        </div>
-                        <div className="feature-card">
-                            <div className="feature-icon">👤</div>
-                            <h3>No Login Required</h3>
-                            <p>Upload and analyze videos anonymously. Create an account to save your history.</p>
-                        </div>
-                        <div className="feature-card">
-                            <div className="feature-icon">📱</div>
-                            <h3>Works Anywhere</h3>
-                            <p>Upload videos from any device. MP4, AVI, MOV, WebM, and MKV supported.</p>
-                        </div>
-                        <div className="feature-card">
-                            <div className="feature-icon">🔒</div>
-                            <h3>Privacy First</h3>
-                            <p>Your videos are analyzed securely and can be deleted at any time.</p>
-                        </div>
-                    </div>
+                <h2 className="section-title">How It Works</h2>
+                <div className="features-grid">
+                  <div className="feature-card">
+                    <div className="feature-icon">🧠</div>
+                    <h3>AI-Powered Analysis</h3>
+                    <p>Uses MediaPipe pose detection to analyze body language patterns in real-time.</p>
+                  </div>
+                  <div className="feature-card">
+                    <div className="feature-icon">👤</div>
+                    <h3>No Login Required</h3>
+                    <p>Upload and analyze videos anonymously. Create an account to save your history.</p>
+                  </div>
+                  <div className="feature-card">
+                    <div className="feature-icon">📱</div>
+                    <h3>Works Anywhere</h3>
+                    <p>Upload videos from any device. MP4, AVI, MOV, WebM, and MKV supported.</p>
+                  </div>
+                  <div className="feature-card">
+                    <div className="feature-icon">🔒</div>
+                    <h3>Privacy First</h3>
+                    <p>Your videos are analyzed securely and can be deleted at any time.</p>
+                  </div>
                 </div>
+              </div>
 
             </div>
           </div>

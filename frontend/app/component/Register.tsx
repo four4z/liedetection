@@ -66,13 +66,13 @@ function Register({ setMode }: RegisterProps) {
                     </div>
 
                 </div>
-                <div className="flex items-center gap-3 my-6">
+                {/* <div className="flex items-center gap-3 my-6">
                     <div className="flex-1 h-px bg-white/20" />
                     <span className="text-sm text-white/50">GEN</span>
                     <div className="flex-1 h-px bg-white/20" />
-                </div>
+                </div> */}
 
-                <div className="flex justify-center gap-2">
+                {/* <div className="flex justify-center gap-2">
 
                     <button
                         onClick={() => setGender(gender === "male" ? null : "male")}
@@ -96,7 +96,7 @@ function Register({ setMode }: RegisterProps) {
                         <Icon icon="glyphs-poly:female" width="25" height="25" />
                     </button>
 
-                </div>
+                </div> */}
 
                 <button className="w-full rounded-xl bg-dark-secondary py-2 mt-8 text-sm font-medium cursor-pointer hover:bg-dark-secondary-hover transition">
                     Sign Up

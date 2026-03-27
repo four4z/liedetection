@@ -8,6 +8,48 @@ type AuthMode = "login" | "register";
 
 function Login() {
     const [mode, setMode] = useState<AuthMode>("login");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+    const handleLogin = async () => {
+        try {
+            const res = await fetch("http://127.0.0.1:8000/api/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    email,
+                    password,
+                }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.detail || "Login failed");
+            }
+
+            // ✅ เก็บ token
+            localStorage.setItem("token", data.access_token);
+
+            // ✅ ลองเรียก /me ต่อเลย
+            const meRes = await fetch("http://127.0.0.1:8000/api/auth/me", {
+                headers: {
+                    Authorization: `Bearer ${data.access_token}`,
+                },
+            });
+
+            const meData = await meRes.json();
+            console.log("USER:", meData);
+
+            // ✅ redirect
+            window.location.href = "/";
+
+        } catch (err: any) {
+            alert(err.message);
+        }
+    };
     return (
 
         <div className="min-h-screen flex items-center justify-center ">
@@ -33,6 +75,8 @@ function Login() {
                             <input
                                 type="text"
                                 placeholder="Username"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 className="mt-1 w-full rounded-xl bg-white/10 border border-white/20 px-4 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/30"
                             />
                         </div>
@@ -42,11 +86,15 @@ function Login() {
                             <input
                                 type="password"
                                 placeholder="Password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                                 className="mt-1 w-full rounded-xl bg-white/10 border border-white/20 px-4 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/30"
                             />
                         </div>
 
-                        <button className="w-full rounded-xl bg-dark-secondary py-2 mt-4 text-sm font-medium cursor-pointer hover:bg-dark-secondary-hover transition">
+                        <button
+                            onClick={handleLogin}
+                            className="w-full rounded-xl bg-dark-secondary py-2 mt-4 text-sm font-medium cursor-pointer hover:bg-dark-secondary-hover transition">
                             Sign In
                         </button>
                     </div>
