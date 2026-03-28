@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 import { TimeWarpPoint } from "../data/mockData";
 import Image from "next/image";
 
+type FilterType = "all" | "lie" | "truth";
 
 interface TimewarpTimelineProps {
     videoDuration: number;
@@ -23,6 +24,9 @@ export default function TimewarpTimeline({
     const [draggingPointId, setDraggingPointId] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
+    const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const filterPopupRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setTimeWarpPoints(points || []);
@@ -33,6 +37,25 @@ export default function TimewarpTimeline({
             generateThumbnails(timeWarpPoints);
         }
     }, [videoRef, timeWarpPoints]);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                filterPopupRef.current &&
+                !filterPopupRef.current.contains(event.target as Node)
+            ) {
+                setIsFilterOpen(false);
+            }
+        };
+
+        if (isFilterOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isFilterOpen]);
 
     const generateThumbnails = async (points: TimeWarpPoint[]) => {
         const video = videoRef?.current;
@@ -105,6 +128,34 @@ export default function TimewarpTimeline({
         return "bg-green-500/20 border-green-500/50";
     };
 
+    const getPointFilterType = (point: TimeWarpPoint): Exclude<FilterType, "all"> => {
+        const normalizedLabel = point.label.trim().toLowerCase();
+
+        if (
+            normalizedLabel.includes("lie") ||
+            normalizedLabel.includes("โกหก")
+        ) {
+            return "lie";
+        }
+
+        if (
+            normalizedLabel.includes("truth") ||
+            normalizedLabel.includes("จริง")
+        ) {
+            return "truth";
+        }
+
+        // Fallback for older/mock labels that do not include verdict text.
+        return point.confidence >= 0.8 ? "lie" : "truth";
+    };
+
+    const filteredTimeWarpPoints =
+        activeFilter === "all"
+            ? timeWarpPoints
+            : timeWarpPoints.filter(
+                (point) => getPointFilterType(point) === activeFilter
+            );
+
     const handleMouseUp = () => {
         setDraggingPointId(null);
     };
@@ -142,13 +193,73 @@ export default function TimewarpTimeline({
             onMouseLeave={handleMouseUp}
         >
 
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Icon icon="mdi:clock-outline" width="20" height="20" />
-                Timewarp Points
-            </h3>
+            <div className="mb-4 flex items-center justify-between relative" ref={filterPopupRef}>
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <Icon icon="mdi:clock-outline" width="20" height="20" />
+                    Timewarp Points
+                </h3>
+
+                <button
+                    type="button"
+                    onClick={() => setIsFilterOpen((prev) => !prev)}
+                    className="flex items-center gap-2 rounded-lg border border-gray-600 px-2.5 py-1.5 text-xs text-gray-200 hover:bg-gray-700/60 transition-colors"
+                >
+                    <Icon icon="mdi:filter-variant" width="16" height="16" />
+                    {activeFilter === "all" && "All"}
+                    {activeFilter === "lie" && "Lie"}
+                    {activeFilter === "truth" && "Truth"}
+                </button>
+
+                {isFilterOpen && (
+                    <div className="absolute right-0 top-11 z-20 w-44 rounded-lg border border-gray-700 bg-[#111827] p-2 shadow-xl">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setActiveFilter("all");
+                                setIsFilterOpen(false);
+                            }}
+                            className="w-full px-2 py-1.5 rounded-md text-left text-sm text-gray-100 hover:bg-gray-700/60 flex items-center justify-between"
+                        >
+                            <span className="flex items-center gap-2">
+                                <Icon icon="mdi:format-list-bulleted" width="16" height="16" />
+                                All
+                            </span>
+                            {activeFilter === "all" && <Icon icon="mdi:check" width="16" height="16" className="text-blue-400" />}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setActiveFilter("lie");
+                                setIsFilterOpen(false);
+                            }}
+                            className="w-full px-2 py-1.5 rounded-md text-left text-sm text-gray-100 hover:bg-gray-700/60 flex items-center justify-between"
+                        >
+                            <span className="flex items-center gap-2">
+                                <Icon icon="mdi:alert-circle" width="16" height="16" className="text-red-400" />
+                                Lie
+                            </span>
+                            {activeFilter === "lie" && <Icon icon="mdi:check" width="16" height="16" className="text-blue-400" />}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setActiveFilter("truth");
+                                setIsFilterOpen(false);
+                            }}
+                            className="w-full px-2 py-1.5 rounded-md text-left text-sm text-gray-100 hover:bg-gray-700/60 flex items-center justify-between"
+                        >
+                            <span className="flex items-center gap-2">
+                                <Icon icon="mdi:check-circle" width="16" height="16" className="text-green-400" />
+                                Truth
+                            </span>
+                            {activeFilter === "truth" && <Icon icon="mdi:check" width="16" height="16" className="text-blue-400" />}
+                        </button>
+                    </div>
+                )}
+            </div>
 
             <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scroll">
-                {timeWarpPoints.length === 0 ? (
+                {filteredTimeWarpPoints.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-gray-400">
                         <Icon
                             icon="mdi:clock-alert-outline"
@@ -156,10 +267,14 @@ export default function TimewarpTimeline({
                             height="32"
                             className="mb-2"
                         />
-                        <p className="text-sm">ไม่พบ Timewarp Points</p>
+                        <p className="text-sm">
+                            {activeFilter === "all"
+                                ? "ไม่พบ Timewarp Points"
+                                : "ไม่พบข้อมูลในฟิลเตอร์นี้"}
+                        </p>
                     </div>
                 ) : (
-                    timeWarpPoints.map((point) => (
+                    filteredTimeWarpPoints.map((point) => (
                         <div
                             key={point.id}
                             onClick={() => handlePointClick(point.timestamp)}
