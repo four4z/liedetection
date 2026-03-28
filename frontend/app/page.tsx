@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Footer from "./component/Footer";
 import Link from "next/link";
+import email from "next-auth/providers/email";
+
+interface CurrentUser {
+  username?: string;
+  email?: string;
+}
 
 export default function Home() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<CurrentUser | null>(null);
 
   useEffect(() => {
     const fetchMe = async () => {
@@ -27,6 +32,10 @@ export default function Home() {
           },
         });
 
+        if (!res.ok) {
+          return;
+        }
+
         const data = await res.json();
         setUser(data);
       } catch (err) {
@@ -36,6 +45,8 @@ export default function Home() {
 
     fetchMe();
   }, []);
+
+
   return (
     <>
       <div className="bg-dark-gradient min-h-screen text-white relative overflow-hidden">
@@ -46,18 +57,21 @@ export default function Home() {
         <div className="w-full px-36 p-5 ">
           <div className="flex justify-between ">
             <div>◉ LieDetect</div>
-            <div className="flex gap-4">
-              {/* <Link href="/authPage">
-                <button className="cursor-pointer p-2 px-6 rounded-xl duration-300 hover:text-blue-200">
-                  Sign in
-                </button>
-              </Link> */}
-              <Link href="/Login">
-                <button className="cursor-pointer border-glass-custom bg-glass-custom p-2 px-6 rounded-xl duration-300 hover:text-blue-200 hover:border-blue-200">Sign in</button>
-              </Link>
-              <Link href="/Register">
-                <button className="cursor-pointer border-glass-custom bg-white text-black p-2 px-6 rounded-xl duration-300 hover:bg-white/80">Sign up</button>
-              </Link>
+            <div className="flex gap-4 items-center">
+              {user ? (
+                <span className="border-glass-custom bg-glass-custom p-2 px-6 rounded-xl">
+                  {user.email}
+                </span>
+              ) : (
+                <>
+                  <Link href="/Login">
+                    <button className="cursor-pointer border-glass-custom bg-glass-custom p-2 px-6 rounded-xl duration-300 hover:text-blue-200 hover:border-blue-200">Sign in</button>
+                  </Link>
+                  <Link href="/Register">
+                    <button className="cursor-pointer border-glass-custom bg-white text-black p-2 px-6 rounded-xl duration-300 hover:bg-white/80">Sign up</button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
