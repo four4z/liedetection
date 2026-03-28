@@ -2,7 +2,8 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth";
 
 interface SidebarProps {
     children?: React.ReactNode;
@@ -11,13 +12,22 @@ interface SidebarProps {
 export default function Sidebar({ children }: SidebarProps) {
     const [isOpen, setIsOpen] = useState(true);
     const [openPopup, setOpenPopup] = useState(false);
+    const pathname = usePathname();
+    const router = useRouter();
+    const { user, logout, isLoading } = useAuth();
+
     const togglePopup = () => {
         setOpenPopup((prev) => !prev);
     };
-    const pathname = usePathname();
 
     const toggleSidebar = () => {
         setIsOpen(!isOpen);
+    };
+
+    const handleLogout = () => {
+        logout();
+        togglePopup();
+        router.push("/Login");
     };
 
     const menuItems = [
@@ -99,7 +109,7 @@ export default function Sidebar({ children }: SidebarProps) {
                             />
                             {isOpen && (
                                 <span className="whitespace-nowrap text-sm font-medium">
-                                    User Name
+                                    {isLoading ? "Loading..." : user?.username || user?.email || "User"}
                                 </span>
                             )}
                         </div>
@@ -124,10 +134,7 @@ export default function Sidebar({ children }: SidebarProps) {
                                         {openPopup && (
                                             <div className="absolute bottom-full right-0 mb-2 bg-white text-black p-2 rounded-lg shadow-xl z-50 w-40">
                                                 <button
-                                                    onClick={() => {
-                                                        togglePopup();
-                                                        console.log("logout");
-                                                    }}
+                                                    onClick={handleLogout}
                                                     className="flex items-center gap-2 w-full px-3 py-2 rounded-lg hover:bg-slate-200"
                                                 >
                                                     <Icon icon="mdi:logout" width="20" height="20" />

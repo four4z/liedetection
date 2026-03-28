@@ -3,14 +3,19 @@
 import React, { useState } from "react";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 
 function page() {
-
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const { login } = useAuth();
+    const router = useRouter();
 
     const handleLogin = async () => {
         try {
+            setIsLoading(true);
             const res = await fetch("http://127.0.0.1:8000/api/auth/login", {
                 method: "POST",
                 headers: {
@@ -28,10 +33,7 @@ function page() {
                 throw new Error(data.detail || "Login failed");
             }
 
-            // ✅ เก็บ token
-            localStorage.setItem("token", data.access_token);
-
-            // ✅ ลองเรียก /me ต่อเลย
+            // ✅ เรียก /me เพื่อได้ข้อมูล user
             const meRes = await fetch("http://127.0.0.1:8000/api/auth/me", {
                 headers: {
                     Authorization: `Bearer ${data.access_token}`,
@@ -41,11 +43,16 @@ function page() {
             const meData = await meRes.json();
             console.log("USER:", meData);
 
+            // ✅ เก็บ token และ user ใน context
+            login(data.access_token, meData);
+
             // ✅ redirect
-            window.location.href = "/";
+            router.push("/");
 
         } catch (err: any) {
             alert(err.message);
+        } finally {
+            setIsLoading(false);
         }
     };
     return (
@@ -91,8 +98,9 @@ function page() {
 
                         <button
                             onClick={handleLogin}
-                            className="w-full rounded-xl bg-dark-secondary py-2 mt-4 text-sm font-medium cursor-pointer hover:bg-dark-secondary-hover transition">
-                            Sign In
+                            disabled={isLoading}
+                            className="w-full rounded-xl bg-dark-secondary py-2 mt-4 text-sm font-medium cursor-pointer hover:bg-dark-secondary-hover transition disabled:opacity-50 disabled:cursor-not-allowed">
+                            {isLoading ? "Signing in..." : "Sign In"}
                         </button>
                     </div>
 

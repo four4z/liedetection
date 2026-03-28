@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 
 function page() {
     const [email, setEmail] = useState("");
@@ -10,6 +12,8 @@ function page() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [loading, setLoading] = useState(false);
+    const { login } = useAuth();
+    const router = useRouter();
 
     const handleRegister = async () => {
         if (!email || !username || !password || !confirmPassword) {
@@ -43,8 +47,21 @@ function page() {
                 throw new Error(data.detail || "Register failed");
             }
 
-            localStorage.setItem("token", data.access_token);
-            window.location.href = "/";
+            // ✅ เรียก /me เพื่อได้ข้อมูล user
+            const meRes = await fetch("http://127.0.0.1:8000/api/auth/me", {
+                headers: {
+                    Authorization: `Bearer ${data.access_token}`,
+                },
+            });
+
+            const meData = await meRes.json();
+            console.log("USER:", meData);
+
+            // ✅ เก็บ token และ user ใน context
+            login(data.access_token, meData);
+
+            // ✅ redirect
+            router.push("/");
         } catch (err: any) {
             alert(err.message);
         } finally {
