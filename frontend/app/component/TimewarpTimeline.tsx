@@ -33,9 +33,25 @@ export default function TimewarpTimeline({
     }, [points]);
 
     useEffect(() => {
-        if (videoRef?.current && timeWarpPoints.length) {
-            generateThumbnails(timeWarpPoints);
+        const video = videoRef?.current;
+        if (!video || !timeWarpPoints.length || !video.currentSrc) {
+            return;
         }
+
+        const startGenerating = () => {
+            generateThumbnails(timeWarpPoints);
+        };
+
+        // Ensure metadata exists before seeking/capturing frames.
+        if (video.readyState >= 1) {
+            startGenerating();
+            return;
+        }
+
+        video.addEventListener("loadedmetadata", startGenerating, { once: true });
+        return () => {
+            video.removeEventListener("loadedmetadata", startGenerating);
+        };
     }, [videoRef, timeWarpPoints]);
 
     useEffect(() => {
@@ -63,32 +79,58 @@ export default function TimewarpTimeline({
 
         const newThumbnails: Record<string, string> = {};
 
+        const waitForMetadata = async () => {
+            if (video.readyState >= 1) return;
+
+            await new Promise<void>((resolve) => {
+                const onLoadedMetadata = () => {
+                    resolve();
+                };
+                video.addEventListener("loadedmetadata", onLoadedMetadata, { once: true });
+            });
+        };
+
+        const seekTo = async (timestamp: number) => {
+            await new Promise<void>((resolve) => {
+                const onSeeked = () => resolve();
+                video.addEventListener("seeked", onSeeked, { once: true });
+
+                const safeTimestamp = Math.max(0, Math.min(timestamp, Math.max((video.duration || 0) - 0.1, 0)));
+                video.currentTime = safeTimestamp;
+
+                // Fallback in case seeked does not fire.
+                setTimeout(() => resolve(), 700);
+            });
+        };
+
+        await waitForMetadata();
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        const originalTime = video.currentTime;
+
         for (const point of points) {
             try {
-                // Set video to specific timestamp
-                video.currentTime = point.timestamp;
+                // Use server-provided thumbnail first when available.
+                if (point.thumbnail) {
+                    newThumbnails[point.id] = point.thumbnail;
+                    continue;
+                }
 
-                // Wait for the frame to be ready
-                await new Promise((resolve) => {
-                    const onCanPlay = () => {
-                        video.removeEventListener("canplay", onCanPlay);
-                        resolve(null);
-                    };
-                    video.addEventListener("canplay", onCanPlay, { once: true });
+                await seekTo(point.timestamp);
 
-                    // Timeout fallback
-                    setTimeout(resolve, 500);
-                });
+                if (!video.videoWidth || !video.videoHeight) {
+                    continue;
+                }
 
-                // Capture frame to canvas
-                const canvas = document.createElement("canvas");
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
-                const ctx = canvas.getContext("2d");
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                if (ctx) {
-                    ctx.drawImage(video, 0, 0);
-                    const thumbnail = canvas.toDataURL("image/jpeg", 0.7);
+                const thumbnail = canvas.toDataURL("image/jpeg", 0.7);
+                if (thumbnail && thumbnail !== "data:,") {
                     newThumbnails[point.id] = thumbnail;
                 }
             } catch (error) {
@@ -98,10 +140,8 @@ export default function TimewarpTimeline({
 
         setThumbnails(newThumbnails);
 
-        // Reset video time to beginning
-        if (video) {
-            video.currentTime = 0;
-        }
+        // Restore playback position after capture.
+        video.currentTime = originalTime;
     };
 
     const formatTime = (seconds: number) => {

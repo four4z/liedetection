@@ -219,43 +219,37 @@ export default function VideoDetailPage() {
                 </h2>
             </div>
 
-            {/* Video Player */}
-            <div className="flex gap-6 items-stretch mb-2">
-
-                {/* Left : Video Section */}
-                <div className="">
-                    <div className="rounded-lg mb-4 w-full">
-
-                        {videoUrl ? (
-                            <div className="h-125 max-w-250 bg-black rounded-lg overflow-hidden ">
-                                <video
-                                    ref={videoRef}
-                                    controls
-                                    className="w-full h-full object-contain"
-                                    src={videoUrl}
-                                    poster="/api/placeholder/640/360"
-                                >
-                                    เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ
-                                </video>
+            {/* Bento Grid */}
+            <div className="mb-2 grid grid-cols-1 gap-6 lg:grid-cols-7 lg:grid-rows-7 lg:h-195">
+                <div className="lg:[grid-area:1/1/6/6] rounded-lg w-full h-full">
+                    {videoUrl ? (
+                        <div className="h-full w-full bg-black rounded-lg overflow-hidden">
+                            <video
+                                ref={videoRef}
+                                controls
+                                className="w-full h-full object-contain"
+                                src={videoUrl}
+                                poster="/api/placeholder/640/360"
+                            >
+                                เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ
+                            </video>
+                        </div>
+                    ) : (
+                        <div className="h-full w-full bg-gray-700 rounded-lg flex items-center justify-center">
+                            <div className="text-center">
+                                <Icon
+                                    icon="mdi:video-off"
+                                    width="48"
+                                    height="48"
+                                    className="text-gray-400 mb-2"
+                                />
+                                <p className="text-gray-400">ไม่สามารถโหลดวิดีโอได้</p>
                             </div>
-                        ) : (
-                            <div className="h-125 max-w-250 bg-gray-700 rounded-lg flex items-center justify-center">
-                                <div className="text-center">
-                                    <Icon
-                                        icon="mdi:video-off"
-                                        width="48"
-                                        height="48"
-                                        className="text-gray-400 mb-2"
-                                    />
-                                    <p className="text-gray-400">ไม่สามารถโหลดวิดีโอได้</p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
 
-                {/* Right : Log Section */}
-                <div className="w-96 h-125 flex flex-col">
+                <div className="lg:[grid-area:1/6/8/8] min-h-75 lg:min-h-0 h-full">
                     <TimewarpTimeline
                         videoDuration={video?.durationSeconds || 60}
                         videoRef={videoRef}
@@ -265,14 +259,9 @@ export default function VideoDetailPage() {
                         }}
                     />
                 </div>
-            </div>
 
-            {/* Video Information */}
-            <div className="">
-                {/* Basic Information */}
-
-                {/* Analysis Results */}
-                <div className="bg-greay-custom rounded-lg p-6 w-full">
+                <div className="lg:[grid-area:6/1/8/6]">
+                    <div className="bg-greay-custom rounded-lg p-6 w-full h-full overflow-auto">
 
                     {video.analysisResult ? (
                         <div className="grid md:grid-cols-2 gap-6 space-y-4">
@@ -329,6 +318,7 @@ export default function VideoDetailPage() {
                             <p className="text-gray-400">ยังไม่ได้วิเคราะห์</p>
                         </div>
                     )}
+                    </div>
                 </div>
             </div>
 
