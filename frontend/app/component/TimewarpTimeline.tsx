@@ -324,7 +324,7 @@ export default function TimewarpTimeline({
                         >
 
                             <div className="flex justify-between ">
-                                <div className="flex gap-2">
+                                <div className="flex  gap-2">
                                     {thumbnails[point.id] && (
                                         <Image
                                             src={thumbnails[point.id]}
@@ -334,8 +334,15 @@ export default function TimewarpTimeline({
                                             height={48}
                                         />
                                     )}
+                                    <div className="">
                                     <div className="text-xs text-gray-400 font-mono">
                                         {formatTime(point.timestamp)}
+                                    </div>
+                                    {point.partsIndicate && (
+                                        <span className="text-[10px] text-gray-300 uppercase tracking-wide">
+                                            {point.partsIndicate}
+                                        </span>
+                                    )}
                                     </div>
                                 </div>
 

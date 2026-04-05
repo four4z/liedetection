@@ -3,14 +3,6 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { mockVideos, VideoItem } from "../data/mockData";
-import Image from "next/image";
-
-interface AnalysisResult {
-    isLieDetected: boolean;
-    confidenceScore: number;
-    status: string;
-    analyzedAt?: string;
-}
 
 interface VideoListProps {
     videos?: VideoItem[];

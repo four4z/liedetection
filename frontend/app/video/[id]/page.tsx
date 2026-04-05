@@ -1,23 +1,9 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
-import { getMockVideoById, VideoItem, TimeWarpPoint } from "../../data/mockData";
+import { getMockVideoById, AnalysisResult, TimeWarpPoint } from "../../data/mockData";
 import TimewarpTimeline from "../../component/TimewarpTimeline";
-
-interface AnalysisResult {
-    video: string;
-    segments: Array<{
-        timestamp: string;
-        confidence_score: number;
-        verdict: string;
-    }>;
-    summary: {
-        average_confidence_score: number;
-        final_verdict: string;
-        total_segments_analyzed: number;
-    };
-}
 
 interface VideoDetail {
     id: string;
@@ -45,6 +31,30 @@ export default function VideoDetailPage() {
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
     const [isEditingName, setIsEditingName] = useState(false);
     const [newFilename, setNewFilename] = useState('');
+
+    const timewarpPoints = useMemo<TimeWarpPoint[]>(() => {
+        const segments = video?.analysisResult?.segments;
+
+        if (segments && segments.length > 0) {
+            return segments.map((segment, index) => {
+                const [start] = segment.raw_timestamp.split("-");
+                const parsedStart = Number.parseFloat(start);
+
+                return {
+                    id: `segment-${index + 1}`,
+                    timestamp: Number.isFinite(parsedStart) ? parsedStart : index * 3,
+                    confidence: segment.average_confidence_score_segment,
+                    label: segment.verdict === "LIE" ? "โกหก" : "จริง",
+                    partsIndicate: segment.parts_indicate,
+                    thumbnail: segment.face_image_b64
+                        ? `data:image/jpeg;base64,${segment.face_image_b64}`
+                        : undefined,
+                };
+            });
+        }
+
+        return video?.timeWarpPoints || [];
+    }, [video]);
 
     useEffect(() => {
         if (videoId) {
@@ -136,38 +146,6 @@ export default function VideoDetailPage() {
         setIsEditingName(false);
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'completed':
-                return 'text-green-400';
-            case 'processing':
-                return 'text-yellow-400';
-            case 'failed':
-                return 'text-red-400';
-            default:
-                return 'text-gray-400';
-        }
-    };
-
-    const getStatusText = (status: string) => {
-        switch (status) {
-            case 'completed':
-                return 'เสร็จสิ้น';
-            case 'processing':
-                return 'กำลังประมวลผล';
-            case 'failed':
-                return 'ล้มเหลว';
-            default:
-                return 'รอดำเนินการ';
-        }
-    };
-
-    const getConfidenceColor = (score: number) => {
-        if (score >= 0.8) return 'text-red-500';
-        if (score >= 0.6) return 'text-yellow-500';
-        return 'text-green-500';
-    };
-
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
@@ -253,7 +231,7 @@ export default function VideoDetailPage() {
                     <TimewarpTimeline
                         videoDuration={video?.durationSeconds || 60}
                         videoRef={videoRef}
-                        points={video?.timeWarpPoints}
+                        points={timewarpPoints}
                         onPointClick={(timestamp) => {
                             console.log(`Clicked timewarp point at ${timestamp}s`);
                         }}
@@ -304,7 +282,7 @@ export default function VideoDetailPage() {
                                                     {segment.verdict === 'LIE' ? 'โกหก' : 'จริง'}
                                                 </span>
                                                 <span className="text-gray-400 text-sm">
-                                                    ({(segment.confidence_score * 100).toFixed(1)}%)
+                                                    ({(segment.average_confidence_score_segment * 100).toFixed(1)}%)
                                                 </span>
                                             </div>
                                         </div>

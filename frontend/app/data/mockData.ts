@@ -2,8 +2,16 @@ export interface AnalysisResult {
     video: string;
     segments: Array<{
         timestamp: string;
-        confidence_score: number;
+        raw_timestamp: string;
+        face_confidence_score: number;
+        face_verdict: "TRUTH" | "LIE";
+        arms_confidence_score: number;
+        arms_verdict: "TRUTH" | "LIE";
+        average_confidence_score_segment: number;
         verdict: string;
+        parts_indicate: "arms" | "face";
+        average_based_verdict: "TRUTH" | "LIE";
+        face_image_b64: string;
     }>;
     summary: {
         average_confidence_score: number;
@@ -18,6 +26,7 @@ export interface TimeWarpPoint {
     timestamp: number; // in seconds
     confidence: number; // 0-1
     label: string;
+    partsIndicate?: "arms" | "face";
     thumbnail?: string;
 }
 
@@ -52,14 +61,30 @@ export const mockVideos: VideoItem[] = [
             video: "Test.mp4",
             segments: [
                 {
-                    timestamp: "0.00 - 1.15",
-                    confidence_score: 0.9372,
-                    verdict: "LIE"
+                    timestamp: "00:00 - 00:03",
+                    raw_timestamp: "0.00-3.00",
+                    face_confidence_score: 0.8123,
+                    face_verdict: "LIE",
+                    arms_confidence_score: 0.9372,
+                    arms_verdict: "LIE",
+                    average_confidence_score_segment: 0.8748,
+                    verdict: "LIE",
+                    parts_indicate: "arms",
+                    average_based_verdict: "LIE",
+                    face_image_b64: ""
                 },
                 {
-                    timestamp: "1.16 - 5.99",
-                    confidence_score: 0.9325,
-                    verdict: "LIE"
+                    timestamp: "00:03 - 00:06",
+                    raw_timestamp: "3.00-6.00",
+                    face_confidence_score: 0.8895,
+                    face_verdict: "LIE",
+                    arms_confidence_score: 0.9325,
+                    arms_verdict: "LIE",
+                    average_confidence_score_segment: 0.911,
+                    verdict: "LIE",
+                    parts_indicate: "arms",
+                    average_based_verdict: "LIE",
+                    face_image_b64: ""
                 }
             ],
             summary: {
@@ -89,14 +114,30 @@ export const mockVideos: VideoItem[] = [
             video: "Momo.mp4",
             segments: [
                 {
-                    timestamp: "0.00 - 2.30",
-                    confidence_score: 0.4567,
-                    verdict: "TRUTH"
+                    timestamp: "00:00 - 00:03",
+                    raw_timestamp: "0.00-3.00",
+                    face_confidence_score: 0.4567,
+                    face_verdict: "TRUTH",
+                    arms_confidence_score: 0.512,
+                    arms_verdict: "TRUTH",
+                    average_confidence_score_segment: 0.4844,
+                    verdict: "TRUTH",
+                    parts_indicate: "arms",
+                    average_based_verdict: "TRUTH",
+                    face_image_b64: ""
                 },
                 {
-                    timestamp: "2.31 - 4.50",
-                    confidence_score: 0.7234,
-                    verdict: "LIE"
+                    timestamp: "00:03 - 00:06",
+                    raw_timestamp: "3.00-6.00",
+                    face_confidence_score: 0.7234,
+                    face_verdict: "LIE",
+                    arms_confidence_score: 0.612,
+                    arms_verdict: "LIE",
+                    average_confidence_score_segment: 0.6677,
+                    verdict: "LIE",
+                    parts_indicate: "face",
+                    average_based_verdict: "LIE",
+                    face_image_b64: ""
                 }
             ],
             summary: {
