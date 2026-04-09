@@ -27,7 +27,7 @@ export default function Sidebar({ children }: SidebarProps) {
     const handleLogout = () => {
         logout();
         togglePopup();
-        router.push("/Login");
+        // router.push("/Login");
     };
 
     const menuItems = [
@@ -99,58 +99,80 @@ export default function Sidebar({ children }: SidebarProps) {
 
                 {/* user/profile section */}
                 <div className="border-t border-greay-custom p-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Icon
-                                icon="mdi:account-circle"
-                                width="32"
-                                height="32"
-                                className="shrink-0 text-white"
-                            />
-                            {isOpen && (
-                                <span className="whitespace-nowrap text-sm font-medium">
-                                    {isLoading ? "Loading..." : user?.username || user?.email || "User"}
-                                </span>
-                            )}
-                        </div>
-                        <div className="relative">
-
+                    {user ? (
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <Icon
+                                    icon="mdi:account-circle"
+                                    width="32"
+                                    height="32"
+                                    className="shrink-0 text-white"
+                                />
+                                {isOpen && (
+                                    <span className="whitespace-nowrap text-sm font-medium">
+                                        {isLoading ? "Loading..." : user?.username || user?.email || "User"}
+                                    </span>
+                                )}
+                            </div>
                             <div className="relative">
 
-                                {isOpen && (
-                                    <>
-                                        <button
-                                            onClick={togglePopup}
-                                            className="p-2 rounded-full hover:bg-slate-700 transition-colors duration-200"
-                                        >
-                                            <Icon
-                                                icon="mdi:dots-vertical"
-                                                width="24"
-                                                height="24"
-                                                className="text-white"
-                                            />
-                                        </button>
+                                <div className="">
 
-                                        {openPopup && (
-                                            <div className="absolute bottom-full right-0 mb-2 bg-white text-black p-2 rounded-lg shadow-xl z-50 w-40">
-                                                <button
-                                                    onClick={handleLogout}
-                                                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg hover:bg-slate-200"
-                                                >
-                                                    <Icon icon="mdi:logout" width="20" height="20" />
-                                                    <span className="text-sm">Logout</span>
-                                                </button>
-                                            </div>
-                                        )}
-                                    </>
-                                )}
+                                    {isOpen && (
+                                        <>
+                                            <button
+                                                onClick={togglePopup}
+                                                className="p-2 rounded-full hover:bg-slate-700 transition-colors duration-200"
+                                            >
+                                                <Icon
+                                                    icon="mdi:dots-vertical"
+                                                    width="24"
+                                                    height="24"
+                                                    className="text-white"
+                                                />
+                                            </button>
+
+                                            {openPopup && (
+                                                <div className="absolute bottom-full right-0 mb-2 bg-white text-black p-2 rounded-lg shadow-xl z-50 w-40">
+                                                    <button
+                                                        onClick={handleLogout}
+                                                        className="flex items-center gap-2 w-full px-3 py-2 rounded-lg hover:bg-slate-200"
+                                                    >
+                                                        <Icon icon="mdi:logout" width="20" height="20" />
+                                                        <span className="text-sm">Logout</span>
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+
+                                </div>
 
                             </div>
 
                         </div>
+                    ) : (
+                        <div className="flex flex-col justify-center items-center gap-4">
+                            <div className=" font-bold">
+                                รับคำตอบที่ปรับแต่งเพื่อคุณโดยเฉพาะ
+                            </div>
 
-                    </div>
+                            <div className=" text-xs text-gray-50">
+                                ลงชื่อเข้าใช้เพื่อรับคำตอบที่อิงตามแชตที่บันทึกไว้ รวมถึงสร้างภาพและอัปโหลดไฟล์ได้ด้วย
+                            </div>
+
+                            <Link
+                                href="/Login"
+                                className="w-full text-center border-glass-custom bg-glass-custom p-2 px-6 rounded-xl duration-300 hover:text-blue-200 hover:border-blue-200"
+                            >
+                                Sign in
+                            </Link>
+                        </div>
+                    )}
+
                 </div>
+
+
             </div>
 
 

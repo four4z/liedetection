@@ -6,6 +6,45 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 
+const getErrorMessage = (detail: unknown, fallback: string) => {
+    if (typeof detail === "string" && detail.trim()) {
+        return detail;
+    }
+
+    if (Array.isArray(detail)) {
+        const message = detail
+            .map((item) => {
+                if (typeof item === "string") {
+                    return item;
+                }
+
+                if (item && typeof item === "object") {
+                    const maybeMessage = (item as { msg?: unknown }).msg;
+                    if (typeof maybeMessage === "string") {
+                        return maybeMessage;
+                    }
+                }
+
+                return "";
+            })
+            .filter(Boolean)
+            .join(", ");
+
+        if (message) {
+            return message;
+        }
+    }
+
+    if (detail && typeof detail === "object") {
+        const maybeMessage = (detail as { message?: unknown; detail?: unknown }).message;
+        if (typeof maybeMessage === "string" && maybeMessage.trim()) {
+            return maybeMessage;
+        }
+    }
+
+    return fallback;
+};
+
 function page() {
     const [email, setEmail] = useState("");
     const [username, setUsername] = useState("");
@@ -44,7 +83,7 @@ function page() {
             const data = await res.json();
 
             if (!res.ok) {
-                throw new Error(data.detail || "Register failed");
+                throw new Error(getErrorMessage(data.detail, "Register failed"));
             }
 
             // ✅ เรียก /me เพื่อได้ข้อมูล user

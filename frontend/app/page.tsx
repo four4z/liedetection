@@ -87,14 +87,22 @@ export default function Home() {
                 Upload a video and our AI will analyze body language patterns
                 to detect <br /> potential signs of deception.
               </p>
-              <div className="hero-actions">
-                <Link href="/main" className="btn-main btn-lg">
-                  Start Analysis →
-                </Link>
-                <Link href="/Login" className="btn-primary btn-lg">
-                  Access Account
-                </Link>
-              </div>
+              <div>
+                { user ? (
+                  <Link href="/main" className="btn-main btn-lg">
+                    Start Analysis →
+                  </Link>
+                ) : (
+                  <div className="hero-actions">
+                    <Link href="/main" className="btn-main btn-lg">
+                      Start Analysis →
+                    </Link>
+                    <Link href="/Login" className="btn-primary btn-lg">
+                      Access Account
+                    </Link>
+                  </div>
+                )}  
+                </div>
 
               <div className="hero-visual flex justify-center items-center mt-16">
                 <div className="visual-card mx-5">
