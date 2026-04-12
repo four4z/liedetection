@@ -37,7 +37,7 @@ export default function Sidebar({ children }: SidebarProps) {
             icon: "mdi:home",
         },
         {
-            label: "รายการ",
+            label: "List",
             href: "/list",
             icon: "lucide:list-video",
         },

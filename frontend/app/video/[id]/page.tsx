@@ -44,7 +44,7 @@ export default function VideoDetailPage() {
                     id: `segment-${index + 1}`,
                     timestamp: Number.isFinite(parsedStart) ? parsedStart : index * 3,
                     confidence: segment.average_confidence_score_segment,
-                    label: segment.verdict === "LIE" ? "โกหก" : "จริง",
+                    label: segment.verdict === "LIE" ? "Lie" : "Truth",
                     partsIndicate: segment.parts_indicate,
                     thumbnail: segment.face_image_b64
                         ? `data:image/jpeg;base64,${segment.face_image_b64}`
@@ -74,7 +74,7 @@ export default function VideoDetailPage() {
                     // Use videoPath from mock data
                     setVideoUrl(videoData.videoPath || `/video-${videoId}.mp4`);
                 } else {
-                    throw new Error('ไม่พบวิดีโอนี้');
+                    throw new Error('Video not found');
                 }
                 setLoading(false);
             }, 1000);
@@ -87,7 +87,7 @@ export default function VideoDetailPage() {
 
             if (!response.ok) {
                 if (response.status === 404) {
-                    throw new Error('ไม่พบวิดีโอนี้');
+                    throw new Error('Video not found');
                 }
                 throw new Error('Failed to fetch video detail');
             }
@@ -150,7 +150,7 @@ export default function VideoDetailPage() {
         return (
             <div className="flex justify-center items-center min-h-screen">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                <span className="ml-2 text-white">กำลังโหลด...</span>
+                <span className="ml-2 text-white">Loading...</span>
             </div>
         );
     }
@@ -162,12 +162,12 @@ export default function VideoDetailPage() {
                     <div className="text-red-400 mb-4">
                         <Icon icon="mdi:alert-circle" width="48" height="48" />
                     </div>
-                    <p className="text-white text-lg mb-4">{error || 'ไม่พบวิดีโอ'}</p>
+                    <p className="text-white text-lg mb-4">{error || 'Video not found'}</p>
                     <button
                         onClick={() => router.push('/list')}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
-                        กลับไปยังรายการ
+                        Back to list
                     </button>
                 </div>
             </div>
@@ -190,7 +190,7 @@ export default function VideoDetailPage() {
                     <button
                         onClick={handleEditName}
                         className="text-gray-400 hover:text-white transition-colors"
-                        title="แก้ไขชื่อวิดีโอ"
+                        title="Edit video name"
                     >
                         <Icon icon="mdi:pencil" width="16" height="16" />
                     </button>
@@ -209,7 +209,7 @@ export default function VideoDetailPage() {
                                 src={videoUrl}
                                 poster="/api/placeholder/640/360"
                             >
-                                เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ
+                                Your browser does not support video playback.
                             </video>
                         </div>
                     ) : (
@@ -221,7 +221,7 @@ export default function VideoDetailPage() {
                                     height="48"
                                     className="text-gray-400 mb-2"
                                 />
-                                <p className="text-gray-400">ไม่สามารถโหลดวิดีโอได้</p>
+                                <p className="text-gray-400">Unable to load video.</p>
                             </div>
                         </div>
                     )}
@@ -245,41 +245,41 @@ export default function VideoDetailPage() {
                         <div className="grid md:grid-cols-2 gap-6 space-y-4">
                             {/* Summary Section */}
                             <div className="">
-                                <h4 className="text-md font-semibold text-white mb-3">สรุปผลการวิเคราะห์</h4>
+                                <h4 className="text-md font-semibold text-white mb-3">Analysis Summary</h4>
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-gray-400">ผลการตรวจจับ:</span>
+                                        <span className="text-gray-400">Detection result:</span>
                                         <span className={`font-medium text-lg ${video.analysisResult?.summary?.final_verdict === 'LIE' ? 'text-red-400' : 'text-green-400'}`}>
-                                            {video.analysisResult?.summary?.final_verdict === 'LIE' ? 'ตรวจพบการโกหก' : 'ไม่พบการโกหก'}
+                                            {video.analysisResult?.summary?.final_verdict === 'LIE' ? 'Lie detected' : 'No lie detected'}
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-gray-400">ความเชื่อมั่นเฉลี่ย:</span>
+                                        <span className="text-gray-400">Average confidence:</span>
                                         <span className="text-white font-medium">
                                             {video.analysisResult?.summary?.average_confidence_score ? (video.analysisResult.summary.average_confidence_score * 100).toFixed(1) : '0.0'}%
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-gray-400">จำนวนช่วงที่วิเคราะห์:</span>
+                                        <span className="text-gray-400">Analyzed segments:</span>
                                         <span className="text-white font-medium">
-                                            {video.analysisResult?.summary?.total_segments_analyzed || 0} ช่วง
+                                            {video.analysisResult?.summary?.total_segments_analyzed || 0} segments
                                         </span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Segments Section */}
-                            <div className="">
-                                <h4 className="text-md font-semibold text-white mb-3">รายละเอียดแต่ละช่วง</h4>
+                            {/* <div className="">
+                                <h4 className="text-md font-semibold text-white mb-3">Segment details</h4>
                                 <div className="space-y-2">
                                     {video.analysisResult?.segments?.map((segment, index) => (
                                         <div key={index} className="flex justify-between items-center bg-gray-600 rounded p-2">
                                             <div className="flex-1">
-                                                <span className="text-gray-300 text-sm">ช่วงเวลา: {segment.timestamp}</span>
+                                                <span className="text-gray-300 text-sm">Time range: {segment.timestamp}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className={`text-sm font-medium ${segment.verdict === 'LIE' ? 'text-red-400' : 'text-green-400'}`}>
-                                                    {segment.verdict === 'LIE' ? 'โกหก' : 'จริง'}
+                                                    {segment.verdict === 'LIE' ? 'Lie' : 'Truth'}
                                                 </span>
                                                 <span className="text-gray-400 text-sm">
                                                     ({(segment.average_confidence_score_segment * 100).toFixed(1)}%)
@@ -288,12 +288,12 @@ export default function VideoDetailPage() {
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
                     ) : (
                         <div className="text-center py-8">
                             <Icon icon="mdi:brain" width="32" height="32" className="text-gray-400 mb-2" />
-                            <p className="text-gray-400">ยังไม่ได้วิเคราะห์</p>
+                            <p className="text-gray-400">Not analyzed yet</p>
                         </div>
                     )}
                     </div>
@@ -306,7 +306,7 @@ export default function VideoDetailPage() {
                     onClick={() => router.push('/list')}
                     className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                 >
-                    กลับไปยังรายการ
+                    Back to list
                 </button>
 
             </div>
@@ -315,13 +315,13 @@ export default function VideoDetailPage() {
             {isEditingName && (
                 <div className="fixed inset-0 bg-black-custom flex items-center justify-center z-50">
                     <div className="bg-gray-800 rounded-lg p-6 w-96 max-w-md">
-                        <h3 className="text-lg font-semibold text-white mb-4">แก้ไขชื่อวิดีโอ</h3>
+                        <h3 className="text-lg font-semibold text-white mb-4">Edit Video Name</h3>
                         <input
                             type="text"
                             value={newFilename}
                             onChange={(e) => setNewFilename(e.target.value)}
                             className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="ชื่อวิดีโอใหม่"
+                            placeholder="New video name"
                             autoFocus
                         />
                         <div className="flex gap-2 justify-end">
@@ -329,13 +329,13 @@ export default function VideoDetailPage() {
                                 onClick={handleCancelEdit}
                                 className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                             >
-                                ยกเลิก
+                                Cancel
                             </button>
                             <button
                                 onClick={handleSaveName}
                                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                             >
-                                บันทึก
+                                Save
                             </button>
                         </div>
                     </div>
