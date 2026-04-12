@@ -1,20 +1,19 @@
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Depends
 from datetime import datetime
 from typing import Optional, List
 import uuid
 from bson import ObjectId
 
-from app.models.schemas import VideoResponse, VideoUpload, VideoLinkSubmit
+from app.models.schemas import VideoResponse, VideoUpload
 from app.database.connection import get_videos_collection, get_history_collection
 from app.api.auth import get_current_user, get_optional_user
-from app.ai.analyzer import analyze_video
+
 
 router = APIRouter()
 
 
 @router.post("/upload", response_model=VideoUpload)
 async def upload_video(
-    video_data: VideoLinkSubmit,
     current_user: Optional[dict] = Depends(get_optional_user)
 ):
     """Submit a video link for analysis. Works for both logged in and anonymous users."""
@@ -107,32 +106,16 @@ async def get_video(
 @router.post("/{video_id}/analyze")
 async def trigger_analysis(
     video_id: str,
-    background_tasks: BackgroundTasks
 ):
-    """Trigger lie detection analysis on a video"""
-    videos = get_videos_collection()
+    """Trigger lie detection analysis on a video.
     
-    try:
-        video = await videos.find_one({"_id": ObjectId(video_id)})
-    except:
-        raise HTTPException(status_code=400, detail="Invalid video ID")
-    
-    if not video:
-        raise HTTPException(status_code=404, detail="Video not found")
-    
-    if video.get("analysisResult_status") == "processing":
-        raise HTTPException(status_code=400, detail="Analysis already in progress")
-    
-    # Update status to processing
-    await videos.update_one(
-        {"_id": ObjectId(video_id)},
-        {"$set": {"analysisResult_status": "processing"}}
+    Note: Direct background analysis via this endpoint is not yet wired to the
+    new AI pipeline. Use POST /api/ai/analyze-video to run inference directly.
+    """
+    raise HTTPException(
+        status_code=501,
+        detail="Direct background analysis is not implemented. Use POST /api/ai/analyze-video instead."
     )
-    
-    # Run analysis in background
-    background_tasks.add_task(analyze_video, video_id)
-    
-    return {"message": "Analysis started", "videoId": video_id, "status": "processing"}
 
 
 @router.post("/claim")
