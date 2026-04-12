@@ -110,13 +110,11 @@ export default function Sidebar({ children }: SidebarProps) {
                                 />
                                 {isOpen && (
                                     <span className="whitespace-nowrap text-sm font-medium">
-                                        {isLoading ? "Loading..." : user?.username || user?.email || "User"}
+                                        {isLoading ? "Loading..." : user?.email || "no token"}
                                     </span>
                                 )}
                             </div>
                             <div className="relative">
-
-                                <div className="">
 
                                     {isOpen && (
                                         <>
@@ -146,26 +144,23 @@ export default function Sidebar({ children }: SidebarProps) {
                                         </>
                                     )}
 
-                                </div>
-
                             </div>
 
                         </div>
                     ) : (
                         <div className="flex flex-col justify-center items-center gap-4">
-                            <div className=" font-bold">
-                                รับคำตอบที่ปรับแต่งเพื่อคุณโดยเฉพาะ
-                            </div>
-
-                            <div className=" text-xs text-gray-50">
-                                ลงชื่อเข้าใช้เพื่อรับคำตอบที่อิงตามแชตที่บันทึกไว้ รวมถึงสร้างภาพและอัปโหลดไฟล์ได้ด้วย
-                            </div>
-
+                
+                            
                             <Link
                                 href="/Login"
-                                className="w-full text-center border-glass-custom bg-glass-custom p-2 px-6 rounded-xl duration-300 hover:text-blue-200 hover:border-blue-200"
+                                className="flex justify-center items-center gap-3 py-3 w-full bg-greay-custom p-2  rounded-xl duration-300 hover:text-blue-200 hover:border-blue-200"
                             >
-                                Sign in
+                                <Icon icon="material-symbols:login" width="24" height="24"   />
+                                {isOpen && (
+                                    <span className="whitespace-nowrap text-sm font-medium">
+                                        {isLoading ? "Loading..." : user?.username || user?.email || "Sign in"}
+                                    </span>
+                                )}
                             </Link>
                         </div>
                     )}
