@@ -107,16 +107,16 @@ export default function HistoryPage() {
     };
 
     return (
-        <div className="p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div className="p-3 sm:p-4 md:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">History</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold text-white">History</h1>
                     <p className="text-gray-400 text-sm">ประวัติการเปิดวิดีโอของบัญชีนี้</p>
                 </div>
                 <button
                     onClick={handleClear}
                     disabled={!token || logs.length === 0 || isClearing}
-                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
                 >
                     {isClearing ? "กำลังล้าง..." : "ล้างประวัติ"}
                 </button>
@@ -160,18 +160,18 @@ export default function HistoryPage() {
             {!loading && !error && token && logs.length > 0 && (
                 <div className="space-y-6">
                     {Object.entries(groupedByDay).map(([day, items]) => (
-                        <section key={day} className="bg-greay-custom rounded-xl p-4">
+                        <section key={day} className="bg-greay-custom rounded-xl p-3 sm:p-4">
                             <h2 className="text-white font-semibold mb-3">{day}</h2>
                             <div className="space-y-2">
                                 {items.map((item) => (
                                     <Link
                                         key={item.id}
                                         href={`/video/${item.videoId}`}
-                                        className="flex items-center justify-between rounded-lg px-3 py-2 bg-slate-800 hover:bg-slate-700 transition-colors"
+                                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 rounded-lg px-3 py-2 bg-slate-800 hover:bg-slate-700 transition-colors"
                                     >
                                         <div className="flex items-center gap-3">
                                             <Icon icon="mdi:play-circle-outline" width="20" height="20" className="text-gray-300" />
-                                            <span className="text-white text-sm">Video ID: {item.videoId}</span>
+                                            <span className="text-white text-sm break-all">Video ID: {item.videoId}</span>
                                         </div>
                                         <span className="text-gray-400 text-xs">{formatDateTime(item.viewedAt)}</span>
                                     </Link>

@@ -113,7 +113,7 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
         return (
             <div className="space-y-4">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-white">รายการวิดีโอ</h2>
+                    <h2 className="text-xl sm:text-2xl font-bold text-white">รายการวิดีโอ</h2>
                 </div>
                 <div>
                     <input
@@ -147,7 +147,7 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">รายการวิดีโอ</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-white">รายการวิดีโอ</h2>
 
             </div>
             <div>
@@ -161,11 +161,11 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
             <div className="flex justify-end items-center">
                 {/* pagination navigation */}
 
-                <div className="flex justify-center items-center mt-6 space-x-2">
+                <div className="flex flex-wrap justify-end items-center mt-4 sm:mt-6 gap-2">
                     <button
                         onClick={() => changePage(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className="px-3 py-1  text-white rounded disabled:opacity-50"
+                        className="px-2 sm:px-3 py-1 text-white rounded border border-greay-custom disabled:opacity-50"
                     >
                         <Icon icon="ooui:next-rtl" width="20" height="20" />
                     </button>
@@ -173,13 +173,13 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
                         <button
                             key={page}
                             onClick={() => changePage(page)}
-                            className={`px-3 py-1 rounded ${page === currentPage ? 'bg-gray-700 text-white' : 'bg-greay-custom  text-white hover:bg-gray-600'}`}
+                            className={`min-w-8 px-2 sm:px-3 py-1 rounded text-sm ${page === currentPage ? 'bg-gray-700 text-white' : 'bg-greay-custom text-white hover:bg-gray-600'}`}
                         >{page}</button>
                     ))}
                     <button
                         onClick={() => changePage(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className="px-3 py-1  text-white rounded disabled:opacity-50"
+                        className="px-2 sm:px-3 py-1 text-white rounded border border-greay-custom disabled:opacity-50"
                     >
                         <Icon icon="ooui:next-ltr" width="20" height="20" />
                     </button>
@@ -188,14 +188,14 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
                 {/* <span className="flex  justify-end text-gray-400 text-sm text-end pt-3">ทั้งหมด {videos.length} รายการ</span> */}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 ">
+            <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {paginatedVideos.map((video) => (
                     <div
                         key={video.id}
                         onClick={() => handleVideoClick(video.id)}
-                        className=" "
+                        className=""
                     >
-                        <div className="group relative rounded-lg p-4 cursor-pointer">
+                        <div className="group relative rounded-lg p-2 sm:p-4 cursor-pointer">
 
                             {/* Background effect */}
                             <div className="absolute inset-0 
