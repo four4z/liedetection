@@ -108,7 +108,7 @@ export default function HistoryPage() {
 
     return (
         <div className="p-3 sm:p-4 md:p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4 ">
                 <div>
                     <h1 className="text-xl sm:text-2xl font-bold text-white">History</h1>
                     <p className="text-gray-400 text-sm">ประวัติการเปิดวิดีโอของบัญชีนี้</p>
