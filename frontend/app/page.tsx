@@ -1,50 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Footer from "./component/Footer";
 import Link from "next/link";
-import email from "next-auth/providers/email";
-
-interface CurrentUser {
-  username?: string;
-  email?: string;
-}
+import { useAuth } from "@/lib/auth";
 
 export default function Home() {
-  const [user, setUser] = useState<CurrentUser | null>(null);
-
-  useEffect(() => {
-    const fetchMe = async () => {
-      const token = localStorage.getItem("token");
-
-      if (token) {
-        console.log("TOKEN:", token);
-      } else {
-        console.log("No token");
-      }
-
-      if (!token) return;
-
-      try {
-        const res = await fetch("http://127.0.0.1:8000/api/auth/me", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!res.ok) {
-          return;
-        }
-
-        const data = await res.json();
-        setUser(data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchMe();
-  }, []);
+  const { user } = useAuth();
 
 
   return (

@@ -1,28 +1,24 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
-import { mockVideos, VideoItem } from "../data/mockData";
+import { useAuth } from "@/lib/auth";
+import { ApiVideo, videosApi } from "@/lib/api";
 
 interface VideoListProps {
-    videos?: VideoItem[];
+    videos?: ApiVideo[];
     onVideoClick?: (videoId: string) => void;
 }
 
 export default function VideoList({ videos: propVideos, onVideoClick }: VideoListProps) {
-    const [videos, setVideos] = useState<VideoItem[]>(propVideos || []);
+    const [videos, setVideos] = useState<ApiVideo[]>(propVideos || []);
     const [loading, setLoading] = useState(!propVideos);
     const [error, setError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
     const itemsPerPage = 6;
     const router = useRouter();
-
-    useEffect(() => {
-        if (!propVideos) {
-            fetchVideos();
-        }
-    }, [propVideos]);
+    const { token, isLoading: authLoading } = useAuth();
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(e.target.value);
@@ -30,38 +26,32 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
     };
 
     const filteredVideos = videos.filter(video =>
-        video.originalFilename.toLowerCase().includes(searchTerm.toLowerCase())
+        (video.title || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const fetchVideos = async () => {
+    const fetchVideos = useCallback(async () => {
         try {
             setLoading(true);
-
-            // Simulate API delay
-            setTimeout(() => {
-                setVideos(mockVideos);
-                setLoading(false);
-            }, 1000);
-
-            /*
-            // Real API call - commented out for development
-            const response = await fetch('/api/videos', {
-                credentials: 'include'
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch videos');
+            if (!token) {
+                setVideos([]);
+                return;
             }
 
-            const data = await response.json();
+            const data = await videosApi.listMine(token);
             setVideos(data);
-            */
+            setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
         } finally {
-            // setLoading(false); // Commented out because setTimeout handles this
+            setLoading(false);
         }
-    };
+    }, [token]);
+
+    useEffect(() => {
+        if (!authLoading && !propVideos) {
+            fetchVideos();
+        }
+    }, [propVideos, authLoading, fetchVideos]);
 
     const handleVideoClick = (videoId: string) => {
         if (onVideoClick) {
@@ -79,32 +69,6 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
             hour: '2-digit',
             minute: '2-digit'
         });
-    };
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'completed':
-                return 'text-green-400';
-            case 'processing':
-                return 'text-yellow-400';
-            case 'failed':
-                return 'text-red-400';
-            default:
-                return 'text-gray-400';
-        }
-    };
-
-    const getStatusText = (status: string) => {
-        switch (status) {
-            case 'completed':
-                return 'เสร็จสิ้น';
-            case 'processing':
-                return 'กำลังประมวลผล';
-            case 'failed':
-                return 'ล้มเหลว';
-            default:
-                return 'รอดำเนินการ';
-        }
     };
 
     if (loading) {
@@ -140,7 +104,7 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
                     <Icon icon="mdi:video-off" width="48" height="48" />
                 </div>
                 <p className="text-white text-lg">ยังไม่มีวิดีโอ</p>
-                <p className="text-gray-400">อัปโหลดวิดีโอเพื่อเริ่มการวิเคราะห์</p>
+                <p className="text-gray-400">{token ? 'อัปโหลดวิดีโอเพื่อเริ่มการวิเคราะห์' : 'กรุณาเข้าสู่ระบบเพื่อดูรายการวิดีโอของคุณ'}</p>
             </div>
         );
     }
@@ -246,7 +210,7 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
                                 <div className="relative w-full aspect-video rounded-md overflow-hidden">
 
                                     <video
-                                        src={video.videoPath}
+                                        src={video.videoUrl}
                                         className="w-full h-full object-cover"
                                     />
 
@@ -254,7 +218,7 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
 
                                 <div className="w-full pt-3">
                                     <h3 className="text-white font-medium truncate text-sm mb-1">
-                                        {video.originalFilename}
+                                        {video.title || 'Untitled video'}
                                     </h3>
                                     <p className="text-gray-400 text-xs">
                                         {formatDate(video.uploadedAt)}

@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
+import { authApi } from "@/lib/api";
 
 const getErrorMessage = (detail: unknown, fallback: string) => {
     if (typeof detail === "string" && detail.trim()) {
@@ -45,7 +46,7 @@ const getErrorMessage = (detail: unknown, fallback: string) => {
     return fallback;
 };
 
-function page() {
+function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -55,31 +56,8 @@ function page() {
     const handleLogin = async () => {
         try {
             setIsLoading(true);
-            const res = await fetch("http://127.0.0.1:8000/api/auth/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    email,
-                    password,
-                }),
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(getErrorMessage(data.detail, "Login failed"));
-            }
-
-            // ✅ เรียก /me เพื่อได้ข้อมูล user
-            const meRes = await fetch("http://127.0.0.1:8000/api/auth/me", {
-                headers: {
-                    Authorization: `Bearer ${data.access_token}`,
-                },
-            });
-
-            const meData = await meRes.json();
+            const data = await authApi.login(email, password);
+            const meData = await authApi.me(data.access_token);
             console.log("USER:", meData);
 
             // ✅ เก็บ token และ user ใน context
@@ -88,8 +66,9 @@ function page() {
             // ✅ redirect
             router.push("/");
 
-        } catch (err: any) {
-            alert(err.message);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : getErrorMessage(null, "Login failed");
+            alert(message);
         } finally {
             setIsLoading(false);
         }
@@ -170,4 +149,4 @@ function page() {
     )
 }
 
-export default page
+export default LoginPage

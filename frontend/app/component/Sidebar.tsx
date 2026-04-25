@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 
 interface SidebarProps {
@@ -13,7 +13,6 @@ export default function Sidebar({ children }: SidebarProps) {
     const [isOpen, setIsOpen] = useState(true);
     const [openPopup, setOpenPopup] = useState(false);
     const pathname = usePathname();
-    const router = useRouter();
     const { user, logout, isLoading } = useAuth();
 
     const togglePopup = () => {
@@ -40,6 +39,11 @@ export default function Sidebar({ children }: SidebarProps) {
             label: "List",
             href: "/list",
             icon: "lucide:list-video",
+        },
+        {
+            label: "History",
+            href: "/history",
+            icon: "mdi:history",
         },
     ];
 
@@ -158,7 +162,7 @@ export default function Sidebar({ children }: SidebarProps) {
                                 <Icon icon="material-symbols:login" width="24" height="24"   />
                                 {isOpen && (
                                     <span className="whitespace-nowrap text-sm font-medium">
-                                        {isLoading ? "Loading..." : user?.username || user?.email || "Sign in"}
+                                        {isLoading ? "Loading..." : "Sign in"}
                                     </span>
                                 )}
                             </Link>

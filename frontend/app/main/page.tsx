@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useRef } from "react";
 import { Icon } from "@iconify/react";
+import { videosApi } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 
 export default function Main() {
     const [file, setFile] = useState<File | null>(null);
@@ -8,11 +10,11 @@ export default function Main() {
     const [dragActive, setDragActive] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
-    const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
     const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
+    const { token } = useAuth();
 
     const handleFile = (selectedFile: File) => {
 
@@ -65,7 +67,6 @@ const handleDeleteVideo = () => {
 
     setFile(null);
     setVideoUrl(undefined);
-    setRecordedBlob(null);
     setRecordedUrl(null);
     setIsRecording(false);
     setIsAnalyzing(false);
@@ -98,31 +99,12 @@ const handleDeleteVideo = () => {
 
             console.log("Video uploaded to S3:", s3VideoUrl);
 
-            // Step 2: Send S3 URL to backend for analysis
-            console.log("Sending S3 URL to backend for analysis");
-            const backendResponse = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/videos/upload`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        videoUrl: s3VideoUrl,
-                        title: file.name,
-                    }),
-                }
-            );
+            // Step 2: Submit video URL to backend and trigger analysis.
+            const backendData = await videosApi.uploadLink(s3VideoUrl, file.name, token);
+            await videosApi.triggerAnalysis(backendData.id);
 
-            if (!backendResponse.ok) {
-                const error = await backendResponse.json();
-                throw new Error(error.detail || "Failed to submit video to backend");
-            }
-
-            const backendData = await backendResponse.json();
             console.log("Video submission successful:", backendData);
-
-            alert("วิดีโอถูกส่งไปวิเคราะห์แล้ว");
+            alert("วิดีโอถูกส่งและเริ่มวิเคราะห์แล้ว");
 
             handleDeleteVideo();
         } catch (error) {
@@ -138,7 +120,6 @@ const handleDeleteVideo = () => {
 
             setVideoUrl(undefined);
             setRecordedUrl(null);
-            setRecordedBlob(null);
 
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: true,
@@ -175,7 +156,6 @@ const handleDeleteVideo = () => {
                 setFile(file);
                 setVideoUrl(url);
 
-                setRecordedBlob(blob);
                 setRecordedUrl(url);
 
                 setIsRecording(false);
@@ -204,32 +184,8 @@ const handleDeleteVideo = () => {
 const stopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
         mediaRecorderRef.current.stop();
-
     }
 };
-
-    const handleUploadRecorded = () => {
-        if (recordedBlob) {
-            const recordedFile = new File([recordedBlob], "recorded-video.webm", {
-                type: "video/webm",
-            });
-            handleFile(recordedFile);
-            setRecordedBlob(null);
-            if (recordedUrl) {
-                URL.revokeObjectURL(recordedUrl);
-            }
-            setRecordedUrl(null);
-        }
-    };
-
-    const handleDeleteRecorded = () => {
-        if (recordedUrl) {
-            URL.revokeObjectURL(recordedUrl);
-        }
-
-        setRecordedBlob(null);
-        setRecordedUrl(null);
-    };
 
     return (
         <div className="min-h-screen p-8 text-white   ">

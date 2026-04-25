@@ -2,57 +2,24 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Icon } from "@iconify/react";
-import { TimeWarpPoint } from "../data/mockData";
+import { TimeWarpPoint } from "@/lib/api";
 import Image from "next/image";
 
 type FilterType = "all" | "lie" | "truth";
 
 interface TimewarpTimelineProps {
-    videoDuration: number;
-    videoRef?: React.RefObject<HTMLVideoElement | null>;
     onPointClick?: (timestamp: number) => void;
     points?: TimeWarpPoint[];
 }
 
 export default function TimewarpTimeline({
-    videoDuration,
-    videoRef,
     onPointClick,
     points,
 }: TimewarpTimelineProps) {
-    const [timeWarpPoints, setTimeWarpPoints] = useState<TimeWarpPoint[]>(points || []);
-    const [draggingPointId, setDraggingPointId] = useState<string | null>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
+    const timeWarpPoints = points || [];
     const [activeFilter, setActiveFilter] = useState<FilterType>("all");
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const filterPopupRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        setTimeWarpPoints(points || []);
-    }, [points]);
-
-    useEffect(() => {
-        const video = videoRef?.current;
-        if (!video || !timeWarpPoints.length || !video.currentSrc) {
-            return;
-        }
-
-        const startGenerating = () => {
-            generateThumbnails(timeWarpPoints);
-        };
-
-        // Ensure metadata exists before seeking/capturing frames.
-        if (video.readyState >= 1) {
-            startGenerating();
-            return;
-        }
-
-        video.addEventListener("loadedmetadata", startGenerating, { once: true });
-        return () => {
-            video.removeEventListener("loadedmetadata", startGenerating);
-        };
-    }, [videoRef, timeWarpPoints]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -73,87 +40,10 @@ export default function TimewarpTimeline({
         };
     }, [isFilterOpen]);
 
-    const generateThumbnails = async (points: TimeWarpPoint[]) => {
-        const video = videoRef?.current;
-        if (!video) return;
-
-        const newThumbnails: Record<string, string> = {};
-
-        const waitForMetadata = async () => {
-            if (video.readyState >= 1) return;
-
-            await new Promise<void>((resolve) => {
-                const onLoadedMetadata = () => {
-                    resolve();
-                };
-                video.addEventListener("loadedmetadata", onLoadedMetadata, { once: true });
-            });
-        };
-
-        const seekTo = async (timestamp: number) => {
-            await new Promise<void>((resolve) => {
-                const onSeeked = () => resolve();
-                video.addEventListener("seeked", onSeeked, { once: true });
-
-                const safeTimestamp = Math.max(0, Math.min(timestamp, Math.max((video.duration || 0) - 0.1, 0)));
-                video.currentTime = safeTimestamp;
-
-                // Fallback in case seeked does not fire.
-                setTimeout(() => resolve(), 700);
-            });
-        };
-
-        await waitForMetadata();
-
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
-        const originalTime = video.currentTime;
-
-        for (const point of points) {
-            try {
-                // Use server-provided thumbnail first when available.
-                if (point.thumbnail) {
-                    newThumbnails[point.id] = point.thumbnail;
-                    continue;
-                }
-
-                await seekTo(point.timestamp);
-
-                if (!video.videoWidth || !video.videoHeight) {
-                    continue;
-                }
-
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                const thumbnail = canvas.toDataURL("image/jpeg", 0.7);
-                if (thumbnail && thumbnail !== "data:,") {
-                    newThumbnails[point.id] = thumbnail;
-                }
-            } catch (error) {
-                console.error(`Failed to generate thumbnail for point ${point.id}:`, error);
-            }
-        }
-
-        setThumbnails(newThumbnails);
-
-        // Restore playback position after capture.
-        video.currentTime = originalTime;
-    };
-
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins}:${secs.toString().padStart(2, "0")}`;
-    };
-
-    const getConfidenceTextColor = (confidence: number) => {
-        if (confidence >= 0.8) return "text-red-400";
-        if (confidence >= 0.6) return "text-yellow-400";
-        return "text-green-400";
     };
 
     const getConfidenceColor = (confidence: number) => {
@@ -196,41 +86,12 @@ export default function TimewarpTimeline({
                 (point) => getPointFilterType(point) === activeFilter
             );
 
-    const handleMouseUp = () => {
-        setDraggingPointId(null);
-    };
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!draggingPointId || !containerRef.current) return;
-
-        const rect = containerRef.current.getBoundingClientRect();
-        const percentage = (e.clientX - rect.left) / rect.width;
-        const newTimestamp = Math.max(
-            0,
-            Math.min(videoDuration, percentage * videoDuration)
-        );
-
-        setTimeWarpPoints((prev) =>
-            prev.map((point) =>
-                point.id === draggingPointId
-                    ? { ...point, timestamp: newTimestamp }
-                    : point
-            )
-        );
-    };
-
     const handlePointClick = (timestamp: number) => {
-        if (videoRef?.current) {
-            videoRef.current.currentTime = timestamp;
-        }
         onPointClick?.(timestamp);
     };
     return (
         <div
             className="w-full h-full border border-greay-custom rounded-lg p-4 flex flex-col bg-greay-custom/50"
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
         >
 
             <div className="mb-4 flex items-center justify-between relative" ref={filterPopupRef}>
@@ -325,9 +186,9 @@ export default function TimewarpTimeline({
 
                             <div className="flex justify-between ">
                                 <div className="flex  gap-2">
-                                    {thumbnails[point.id] && (
+                                    {point.thumbnail && (
                                         <Image
-                                            src={thumbnails[point.id]}
+                                            src={point.thumbnail}
                                             alt={`Frame at ${formatTime(point.timestamp)}`}
                                             className=" object-cover rounded"
                                             width={100}
