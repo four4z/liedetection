@@ -62,25 +62,40 @@ def _build_list_item(video: dict) -> VideoListItem:
 # GET /api/videos/  ← static routes MUST come before wildcard /{video_id}
 # ---------------------------------------------------------------------------
 
+# @router.get("/", response_model=List[VideoListItem])
+# async def get_user_videos(
+#     current_user: dict = Depends(get_current_user),
+#     skip: int = 0,
+#     limit: int = 20
+# ):
+#     """Get all videos for the logged-in user (lightweight — no segments payload)."""
+#     videos = get_videos_collection()
+
+#     # Exclude the heavy segments array from the list query
+#     cursor = videos.find(
+#         {"user_id": str(current_user["_id"])},
+#         {"segments": 0}  # projection: omit segments
+#     ).sort("uploaded_at", -1).skip(skip).limit(limit)
+
+#     result = []
+#     async for video in cursor:
+#         result.append(_build_list_item(video))
+
+#     return result
+
+
 @router.get("/", response_model=List[VideoListItem])
-async def get_user_videos(
-    current_user: dict = Depends(get_current_user),
-    skip: int = 0,
-    limit: int = 20
-):
-    """Get all videos for the logged-in user (lightweight — no segments payload)."""
+async def get_all_videos(skip: int = 0, limit: int = 20):
+    """Get all videos in the database (for debugging)."""
     videos = get_videos_collection()
 
-    # Exclude the heavy segments array from the list query
-    cursor = videos.find(
-        {"user_id": str(current_user["_id"])},
-        {"segments": 0}  # projection: omit segments
-    ).sort("uploaded_at", -1).skip(skip).limit(limit)
+    cursor = videos.find({}, {"segments": 0}).sort("uploaded_at", -1).skip(skip).limit(limit)
 
     result = []
     async for video in cursor:
         result.append(_build_list_item(video))
 
+    print(f"Found {len(result)} videos in /all")  # Debug print
     return result
 
 
@@ -94,6 +109,8 @@ async def upload_video(
     current_user: Optional[dict] = Depends(get_optional_user)
 ):
     """Submit a video link for analysis. Works for both logged-in and anonymous users."""
+
+    print("Upload endpoint called")  # Debug print
 
     # Basic URL validation
     if not video_data.video_url.startswith(("http://", "https://")):
@@ -120,6 +137,7 @@ async def upload_video(
 
     videos = get_videos_collection()
     result = await videos.insert_one(video_doc)
+    print(f"Inserted video with ID: {result.inserted_id}")  # Debug print
 
     return VideoUpload(
         id=str(result.inserted_id),

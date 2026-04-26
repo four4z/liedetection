@@ -149,11 +149,15 @@ class VideoInDB(BaseModel):
 # ============ HISTORY MODELS ============
 
 class HistoryLog(BaseModel):
-    """History log entry"""
+    """History log entry — includes video metadata for display"""
     id: str
     userId: str
     videoId: str
     viewedAt: datetime
+    # Video metadata (populated from videos collection on read)
+    video: str        # display name / filename
+    video_url: str
+    thumbnail_url: str
 
 
 class HistoryLogCreate(BaseModel):
