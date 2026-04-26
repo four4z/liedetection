@@ -101,7 +101,7 @@ export default function VideoDetailPage() {
     }
 
     return (
-        <div className="max-w-6xl mx-auto p-6 w-full">
+        <div className=" mx-auto p-6 w-full">
             <div className="flex items-center gap-4 mb-6">
                 <button
                     onClick={() => router.push("/list")}
@@ -112,7 +112,9 @@ export default function VideoDetailPage() {
                 </button>
                 <h2 className="text-xl font-semibold text-white flex items-center gap-2">
                     {getVideoTitle(video)}
+
                 </h2>
+                <p className="mt-2e font-medium text-sm text-gray-400">{formatDate(video.uploaded_at)}</p>
             </div>
 
             <div className="mb-2 grid grid-cols-1 gap-6 lg:grid-cols-7 lg:grid-rows-7 lg:h-195">
@@ -155,111 +157,111 @@ export default function VideoDetailPage() {
                     />
                 </div>
 
-                <div className="lg:[grid-area:6/1/8/6]">
-                    <div className="bg-greay-custom rounded-lg p-6 w-full h-full overflow-auto">
-                        <div className="space-y-6">
-                            <div className="grid gap-4 md:grid-cols-3">
-                                <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
-                                    <p className="text-sm text-gray-400">Video name</p>
-                                    <p className="mt-2 text-white font-medium">{video.video}</p>
-                                </div>
-                                <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
-                                    <p className="text-sm text-gray-400">User id</p>
-                                    <p className="mt-2 text-white font-medium break-all">{video.user_id || "-"}</p>
-                                </div>
-                                <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
-                                    <p className="text-sm text-gray-400">Video duration</p>
-                                    <p className="mt-2 text-white font-medium">{video.video_duration || "-"}</p>
-                                </div>
-                            </div>
 
-                            <div className="grid gap-4 md:grid-cols-3">
-                                <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
-                                    <p className="text-sm text-gray-400">Final verdict</p>
-                                    <p className={`mt-2 font-semibold ${video.summary?.final_verdict === "LIE" ? "text-red-400" : "text-green-400"}`}>
-                                        {video.summary?.final_verdict || "-"}
-                                    </p>
-                                </div>
-                                <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
-                                    <p className="text-sm text-gray-400">Average confidence</p>
-                                    <p className="mt-2 text-white font-medium">
-                                        {video.summary ? formatConfidencePercent(video.summary.average_confidence_score) : "-"}
-                                    </p>
-                                </div>
-                                <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
-                                    <p className="text-sm text-gray-400">Segments analyzed</p>
-                                    <p className="mt-2 text-white font-medium">{video.summary?.total_segments_analyzed ?? video.segments.length}</p>
-                                </div>
+                <div className="lg:[grid-area:6/1/8/6] space-y-6">
+
+                    {/* 🔹 Container 1: Summary */}
+                    <div className=" rounded-lg w-full">
+                        <div className="grid gap-4 md:grid-cols-3">
+                            <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
+                                <p className="text-sm text-gray-400">Final verdict</p>
+                                <p className={`mt-2 font-semibold ${video.summary?.final_verdict === "LIE"
+                                        ? "text-red-400"
+                                        : "text-green-400"
+                                    }`}>
+                                    {video.summary?.final_verdict || "-"}
+                                </p>
                             </div>
 
                             <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
-                                <p className="text-sm text-gray-400">Uploaded at</p>
-                                <p className="mt-2 text-white font-medium">{formatDate(video.uploaded_at)}</p>
+                                <p className="text-sm text-gray-400">Average confidence</p>
+                                <p className="mt-2 text-white font-medium">
+                                    {video.summary
+                                        ? formatConfidencePercent(video.summary.average_confidence_score)
+                                        : "-"}
+                                </p>
                             </div>
 
-                            <div>
-                                <h4 className="text-md font-semibold text-white mb-3">Segments</h4>
-                                <div className="space-y-3">
-                                    {video.segments.length === 0 ? (
-                                        <div className="text-center py-8 text-gray-400">
-                                            <Icon icon="mdi:timeline-clock-outline" width="32" height="32" className="mx-auto mb-2" />
-                                            <p>No segment data available</p>
-                                        </div>
-                                    ) : (
-                                        video.segments.map((segment, index) => (
-                                            <div key={`${segment.timestamp}-${index}`} className="rounded-lg border border-gray-700 bg-black/20 p-4">
-                                                <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-                                                    {segment.face_image_b64 && (
-                                                        <img
-                                                            src={`data:image/jpeg;base64,${segment.face_image_b64}`}
-                                                            alt={segment.timestamp}
-                                                            className="w-full max-w-40 rounded-md border border-gray-700 object-cover"
-                                                        />
-                                                    )}
-                                                    <div className="flex-1 space-y-2">
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            <span className="rounded-full bg-gray-800 px-2 py-1 text-xs text-gray-200">{segment.timestamp}</span>
-                                                            <span className={`rounded-full px-2 py-1 text-xs font-semibold ${segment.verdict === "LIE" ? "bg-red-500/20 text-red-300" : "bg-green-500/20 text-green-300"}`}>
-                                                                {segment.verdict}
-                                                            </span>
-                                                            <span className="rounded-full bg-gray-800 px-2 py-1 text-xs text-gray-200">
-                                                                Parts: {segment.parts_indicate}
-                                                            </span>
-                                                        </div>
-
-                                                        <div className="grid gap-2 sm:grid-cols-2">
-                                                            <p className="text-sm text-gray-300">Face: {formatConfidencePercent(segment.face_confidence_score)} / {segment.face_verdict}</p>
-                                                            <p className="text-sm text-gray-300">Arms: {formatConfidencePercent(segment.arms_confidence_score)} / {segment.arms_verdict}</p>
-                                                            <p className="text-sm text-gray-300">Average: {formatConfidencePercent(segment.average_confidence_score_segment)}</p>
-                                                            <p className="text-sm text-gray-300">Based verdict: {segment.average_based_verdict}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
+                            <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
+                                <p className="text-sm text-gray-400">Segments analyzed</p>
+                                <p className="mt-2 text-white font-medium">
+                                    {video.summary?.total_segments_analyzed ?? video.segments.length}
+                                </p>
                             </div>
                         </div>
                     </div>
+
+                    {/* 🔹 Container 2: Segments */}
+                    {/* <div className="bg-greay-custom rounded-lg p-6 w-full h-full overflow-auto custom-scroll">
+                        <h4 className="text-md font-semibold text-white mb-3">Segments</h4>
+
+                        <div className="space-y-3">
+                            {video.segments.length === 0 ? (
+                                <div className="text-center py-8 text-gray-400">
+                                    <Icon icon="mdi:timeline-clock-outline" width="32" height="32" className="mx-auto mb-2" />
+                                    <p>No segment data available</p>
+                                </div>
+                            ) : (
+                                video.segments.map((segment, index) => (
+                                    <div
+                                        key={`${segment.timestamp}-${index}`}
+                                        className="rounded-lg border border-gray-700 bg-black/20 p-4"
+                                    >
+                                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+
+                                            {segment.face_image_b64 && (
+                                                <img
+                                                    src={`data:image/jpeg;base64,${segment.face_image_b64}`}
+                                                    alt={segment.timestamp}
+                                                    className="w-full max-w-40 rounded-md border border-gray-700 object-cover"
+                                                />
+                                            )}
+
+                                            <div className="flex-1 space-y-2">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="rounded-full bg-gray-800 px-2 py-1 text-xs text-gray-200">
+                                                        {segment.timestamp}
+                                                    </span>
+
+                                                    <span className={`rounded-full px-2 py-1 text-xs font-semibold ${segment.verdict === "LIE"
+                                                            ? "bg-red-500/20 text-red-300"
+                                                            : "bg-green-500/20 text-green-300"
+                                                        }`}>
+                                                        {segment.verdict}
+                                                    </span>
+
+                                                    <span className="rounded-full bg-gray-800 px-2 py-1 text-xs text-gray-200">
+                                                        Parts: {segment.parts_indicate}
+                                                    </span>
+                                                </div>
+
+                                                <div className="grid gap-2 sm:grid-cols-2">
+                                                    <p className="text-sm text-gray-300">
+                                                        Face: {formatConfidencePercent(segment.face_confidence_score)} / {segment.face_verdict}
+                                                    </p>
+                                                    <p className="text-sm text-gray-300">
+                                                        Arms: {formatConfidencePercent(segment.arms_confidence_score)} / {segment.arms_verdict}
+                                                    </p>
+                                                    <p className="text-sm text-gray-300">
+                                                        Average: {formatConfidencePercent(segment.average_confidence_score_segment)}
+                                                    </p>
+                                                    <p className="text-sm text-gray-300">
+                                                        Based verdict: {segment.average_based_verdict}
+                                                    </p>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div> */}
+
                 </div>
             </div>
 
-            <div className="mt-6 flex gap-4">
-                <button
-                    onClick={() => router.push("/list")}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                    Back to list
-                </button>
 
-                <button
-                    onClick={() => fetchVideoDetail(false)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                    Refresh
-                </button>
-            </div>
         </div>
     );
 }

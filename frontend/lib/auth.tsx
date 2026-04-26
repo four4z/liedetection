@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { ApiUser } from "@/lib/api";
 
 interface AuthContextType {
@@ -40,9 +40,16 @@ const readStoredUser = (): ApiUser | null => {
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => readStoredToken());
-  const [user, setUser] = useState<ApiUser | null>(() => readStoredUser());
-  const isLoading = false;
+  // Keep initial render deterministic for SSR/CSR hydration.
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<ApiUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setToken(readStoredToken());
+    setUser(readStoredUser());
+    setIsLoading(false);
+  }, []);
 
   const login = (newToken: string, newUser: ApiUser) => {
     setToken(newToken);

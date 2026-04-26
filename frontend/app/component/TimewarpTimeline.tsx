@@ -2,8 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Icon } from "@iconify/react";
-import { TimeWarpPoint } from "@/lib/api";
-import Image from "next/image";
+import { TimeWarpPoint, formatConfidencePercent } from "@/lib/api";
 
 type FilterType = "all" | "lie" | "truth";
 
@@ -159,7 +158,7 @@ export default function TimewarpTimeline({
                 )}
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scroll">
+            <div className="flex-1 pr-2 space-y-2 custom-scroll">
                 {filteredTimeWarpPoints.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-gray-400">
                         <Icon
@@ -179,49 +178,75 @@ export default function TimewarpTimeline({
                         <div
                             key={point.id}
                             onClick={() => handlePointClick(point.timestamp)}
-                            className={` p-2 rounded-lg transition-all cursor-pointer ${getConfidenceBgColor(
+                            className={`rounded-lg border border-gray-700 bg-black/20 p-4 transition-all cursor-pointer ${getConfidenceBgColor(
                                 point.confidence
-                            )} hover:bg-gray-700/50 `}
+                            )} hover:bg-gray-700/50`}
                         >
 
-                            <div className="flex justify-between ">
-                                <div className="flex  gap-2">
-                                    {point.thumbnail && (
-                                        <Image
-                                            src={point.thumbnail}
-                                            alt={`Frame at ${formatTime(point.timestamp)}`}
-                                            className=" object-cover rounded"
-                                            width={100}
-                                            height={48}
-                                        />
-                                    )}
-                                    <div className="">
-                                    <div className="text-xs text-gray-400 font-mono">
-                                        {formatTime(point.timestamp)}
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+                                <div className="flex gap-2">
+                                    <img
+                                        src={point.thumbnail || "/img/noimg.jpg"}
+                                        alt={`Frame at ${formatTime(point.timestamp)}`}
+                                        className="w-25 h-18 object-cover rounded-md border border-gray-700"
+                                        onError={(event) => {
+                                            event.currentTarget.onerror = null;
+                                            event.currentTarget.src = "/img/noimg.jpg";
+                                        }}
+                                    />
+                                </div>
+
+                                <div className="flex-1 space-y-2">
+
+
+                                    <div className="grid gap-2 sm:grid-cols-2">
+                                        <p className="text-xs text-gray-300">
+                                            Face: {formatConfidencePercent(point.faceConfidenceScore ?? point.confidence)} / {point.faceVerdict || point.label}
+                                        </p>
+                                        <p className="text-xs text-gray-300">
+                                            Arms: {formatConfidencePercent(point.armsConfidenceScore ?? point.confidence)} / {point.armsVerdict || point.label}
+                                        </p>
+                                        <p className="text-xs text-gray-300">
+                                            Average: {formatConfidencePercent(point.averageConfidenceScoreSegment ?? point.confidence)}
+                                        </p>
+                                        <p className="text-xs text-gray-300">
+                                            verdict: {point.averageBasedVerdict || point.label}
+                                        </p>
                                     </div>
-                                    {point.partsIndicate && (
-                                        <span className="text-[10px] text-gray-300 uppercase tracking-wide">
-                                            {point.partsIndicate}
-                                        </span>
-                                    )}
+
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="rounded-full bg-gray-800 px-2 py-1 text-xs text-gray-200 font-mono">
+                                                {formatTime(point.timestamp)}
+                                            </span>
+                                            <span
+                                                className={`rounded-full px-2 py-1 text-[10px] font-semibold ${getPointFilterType(point) === "lie"
+                                                        ? "bg-red-500/20 text-red-300"
+                                                        : "bg-green-500/20 text-green-300"
+                                                    }`}
+                                            >
+                                                {getPointFilterType(point).toUpperCase()}
+                                            </span>
+                                            {point.partsIndicate && (
+                                                <span className="rounded-full bg-gray-800 px-2 py-1 text-[10px] text-gray-200 uppercase tracking-wide">
+                                                    Parts: {point.partsIndicate}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex justify-center items-center gap-1">
+                                            <div className="text-[10px] text-gray-500 font-semibold">
+                                                {Math.round(point.confidence * 100)}%
+                                            </div>
+                                            <div
+                                                className={`w-3 h-3 rounded-full bg-black/40 ${getConfidenceColor(
+                                                    point.confidence
+                                                )}`}
+                                            >
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-
-                                <div className="flex justify-end items-start">
-                                    <div className="flex justify-center items-center gap-1">
-                                        <div className="text-[10px] text-gray-500 font-semibold">
-                                        {Math.round(point.confidence * 100)}%
-                                    </div>
-                                    <div
-                                        className={` w-3 h-3 rounded-full bg-black/40 ${getConfidenceColor(
-                                            point.confidence
-                                        )}`}
-                                    >
-                                    </div>
-                                    </div>
-                                    
-                                </div>
                             </div>
 
                         </div>

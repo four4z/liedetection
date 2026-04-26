@@ -68,6 +68,12 @@ export interface TimeWarpPoint {
     label: string;
     partsIndicate?: "arms" | "face";
     thumbnail?: string;
+    faceConfidenceScore?: number;
+    faceVerdict?: "TRUTH" | "LIE";
+    armsConfidenceScore?: number;
+    armsVerdict?: "TRUTH" | "LIE";
+    averageConfidenceScoreSegment?: number;
+    averageBasedVerdict?: "TRUTH" | "LIE";
 }
 
 const normalizeConfidence = (score: number | null | undefined) => {
@@ -273,5 +279,11 @@ export const buildTimeWarpPoints = (video: ApiVideo): TimeWarpPoint[] => {
         thumbnail: segment.face_image_b64
             ? `data:image/jpeg;base64,${segment.face_image_b64}`
             : video.thumbnail_url || undefined,
+        faceConfidenceScore: segment.face_confidence_score,
+        faceVerdict: segment.face_verdict,
+        armsConfidenceScore: segment.arms_confidence_score,
+        armsVerdict: segment.arms_verdict,
+        averageConfidenceScoreSegment: segment.average_confidence_score_segment,
+        averageBasedVerdict: segment.average_based_verdict,
     }));
 };
