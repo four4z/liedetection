@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/lib/auth";
-import { ApiVideo, videosApi } from "@/lib/api";
+import { ApiVideo, getVideoThumbnail, getVideoTitle, videosApi } from "@/lib/api";
 
 interface VideoListProps {
     videos?: ApiVideo[];
@@ -26,7 +26,7 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
     };
 
     const filteredVideos = videos.filter(video =>
-        (video.title || "").toLowerCase().includes(searchTerm.toLowerCase())
+        getVideoTitle(video).toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const fetchVideos = useCallback(async () => {
@@ -191,8 +191,8 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
             <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {paginatedVideos.map((video) => (
                     <div
-                        key={video.id}
-                        onClick={() => handleVideoClick(video.id)}
+                        key={video.id || video.video_url}
+                        onClick={() => handleVideoClick(video.id || video.video_url)}
                         className=""
                     >
                         <div className="group relative rounded-lg p-2 sm:p-4 cursor-pointer">
@@ -208,20 +208,30 @@ export default function VideoList({ videos: propVideos, onVideoClick }: VideoLis
                             {/* Content */}
                             <div className="relative z-10">
                                 <div className="relative w-full aspect-video rounded-md overflow-hidden">
-
-                                    <video
-                                        src={video.videoUrl}
-                                        className="w-full h-full object-cover"
-                                    />
+                                    {getVideoThumbnail(video) ? (
+                                        <img
+                                            src={getVideoThumbnail(video) || ""}
+                                            alt={getVideoTitle(video)}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <video
+                                            src={video.video_url}
+                                            className="w-full h-full object-cover"
+                                            muted
+                                            playsInline
+                                            preload="metadata"
+                                        />
+                                    )}
 
                                 </div>
 
                                 <div className="w-full pt-3">
                                     <h3 className="text-white font-medium truncate text-sm mb-1">
-                                        {video.title || 'Untitled video'}
+                                        {getVideoTitle(video)}
                                     </h3>
                                     <p className="text-gray-400 text-xs">
-                                        {formatDate(video.uploadedAt)}
+                                        {formatDate(video.uploaded_at)}
                                     </p>
                                 </div>
 

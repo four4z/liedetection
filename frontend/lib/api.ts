@@ -14,23 +14,35 @@ export interface ApiUser {
     createdAt: string;
 }
 
-export interface ApiVideoAnalysisResult {
-    isLieDetected: boolean | null;
-    confidenceScore: number | null;
-    status: "pending" | "processing" | "completed" | "failed";
-    analyzedAt?: string | null;
+export interface ApiVideoSegment {
+    timestamp: string;
+    face_confidence_score: number;
+    face_verdict: "TRUTH" | "LIE";
+    arms_confidence_score: number;
+    arms_verdict: "TRUTH" | "LIE";
+    average_confidence_score_segment: number;
+    verdict: "TRUTH" | "LIE";
+    parts_indicate: "arms" | "face";
+    average_based_verdict: "TRUTH" | "LIE";
+    face_image_b64: string;
+}
+
+export interface ApiVideoSummary {
+    average_confidence_score: number;
+    final_verdict: "LIE" | "TRUTH";
+    total_segments_analyzed: number;
 }
 
 export interface ApiVideo {
-    id: string;
-    userId?: string | null;
-    videoUrl: string;
-    title?: string | null;
-    durationSeconds?: number | null;
-    uploadedAt: string;
-    isAnonymous: boolean;
-    isClaimed: boolean;
-    analysisResult?: ApiVideoAnalysisResult | null;
+    id?: string;
+    user_id: string | null;
+    video: string;
+    video_url: string;
+    thumbnail_url: string | null;
+    uploaded_at: string;
+    video_duration: string | null;
+    segments: ApiVideoSegment[];
+    summary: ApiVideoSummary | null;
 }
 
 export interface ApiVideoUploadResponse {
@@ -57,6 +69,57 @@ export interface TimeWarpPoint {
     partsIndicate?: "arms" | "face";
     thumbnail?: string;
 }
+
+const normalizeConfidence = (score: number | null | undefined) => {
+    if (typeof score !== "number" || !Number.isFinite(score)) {
+        return 0;
+    }
+
+    if (score > 1) {
+        return Math.max(0, Math.min(1, score / 100));
+    }
+
+    return Math.max(0, Math.min(1, score));
+};
+
+const parseTimestampToSeconds = (timestamp: string) => {
+    const head = timestamp.split("-")[0]?.trim() || timestamp.trim();
+
+    if (!head) {
+        return 0;
+    }
+
+    if (head.includes(":")) {
+        const parts = head.split(":").map((part) => Number(part.trim()));
+
+        if (parts.every((part) => Number.isFinite(part))) {
+            if (parts.length === 3) {
+                return parts[0] * 3600 + parts[1] * 60 + parts[2];
+            }
+
+            if (parts.length === 2) {
+                return parts[0] * 60 + parts[1];
+            }
+        }
+    }
+
+    const numeric = Number(head);
+    if (Number.isFinite(numeric)) {
+        return numeric;
+    }
+
+    const parsed = Number.parseFloat(head);
+    return Number.isFinite(parsed) ? parsed : 0;
+};
+
+export const formatConfidencePercent = (score: number | null | undefined) => {
+    const normalized = normalizeConfidence(score);
+    return `${(normalized * 100).toFixed(1)}%`;
+};
+
+export const getVideoTitle = (video: ApiVideo) => video.video || "Untitled video";
+
+export const getVideoThumbnail = (video: ApiVideo) => video.thumbnail_url || null;
 
 interface RequestOptions {
     method?: "GET" | "POST" | "DELETE" | "PATCH" | "PUT";
@@ -197,22 +260,18 @@ export const historyApi = {
 };
 
 export const buildTimeWarpPoints = (video: ApiVideo): TimeWarpPoint[] => {
-    const result = video.analysisResult;
-
-    if (!result || result.status !== "completed" || result.confidenceScore === null || result.confidenceScore === undefined) {
+    if (!video.segments || video.segments.length === 0) {
         return [];
     }
 
-    const duration = typeof video.durationSeconds === "number" && Number.isFinite(video.durationSeconds)
-        ? Math.max(video.durationSeconds, 1)
-        : 1;
-
-    return [
-        {
-            id: `analysis-${video.id}`,
-            timestamp: Math.max(0, duration / 2),
-            confidence: Math.max(0, Math.min(1, result.confidenceScore / 100)),
-            label: result.isLieDetected ? "Lie" : "Truth",
-        },
-    ];
+    return video.segments.map((segment, index) => ({
+        id: `segment-${index + 1}`,
+        timestamp: parseTimestampToSeconds(segment.timestamp),
+        confidence: normalizeConfidence(segment.average_confidence_score_segment),
+        label: segment.verdict,
+        partsIndicate: segment.parts_indicate,
+        thumbnail: segment.face_image_b64
+            ? `data:image/jpeg;base64,${segment.face_image_b64}`
+            : video.thumbnail_url || undefined,
+    }));
 };
