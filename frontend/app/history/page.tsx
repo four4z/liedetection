@@ -118,7 +118,7 @@ export default function HistoryPage() {
                     disabled={!token || logs.length === 0 || isClearing}
                     className="w-full sm:w-auto px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
                 >
-                    {isClearing ? "กำลังล้าง..." : "ล้างประวัติ"}
+                    <Icon icon="mdi:trash" width="24" height="24" />
                 </button>
             </div>
 

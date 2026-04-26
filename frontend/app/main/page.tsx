@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 
 export default function Main() {
     const [file, setFile] = useState<File | null>(null);
+    const [videoTitle, setVideoTitle] = useState("");
     const [videoUrl, setVideoUrl] = useState<string | undefined>(undefined);
     const [dragActive, setDragActive] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -15,6 +16,8 @@ export default function Main() {
     const streamRef = useRef<MediaStream | null>(null);
     const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
     const { token } = useAuth();
+
+    const getDefaultTitle = (name: string) => name.replace(/\.[^/.]+$/, "");
 
     const handleFile = (selectedFile: File) => {
 
@@ -30,6 +33,7 @@ export default function Main() {
         }
 
         setFile(selectedFile);
+        setVideoTitle(getDefaultTitle(selectedFile.name));
         const url = URL.createObjectURL(selectedFile);
         setVideoUrl(url);
     };
@@ -70,6 +74,7 @@ const handleDeleteVideo = () => {
     setRecordedUrl(null);
     setIsRecording(false);
     setIsAnalyzing(false);
+    setVideoTitle("");
 };
 
 
@@ -100,7 +105,8 @@ const handleDeleteVideo = () => {
             console.log("Video uploaded to S3:", s3VideoUrl);
 
             // Step 2: Submit video URL to backend and trigger analysis.
-            const backendData = await videosApi.uploadLink(s3VideoUrl, file.name, token);
+            const resolvedTitle = videoTitle.trim() || getDefaultTitle(file.name);
+            const backendData = await videosApi.uploadLink(s3VideoUrl, resolvedTitle, token);
             await videosApi.triggerAnalysis(backendData.id);
 
             console.log("Video submission successful:", backendData);
@@ -120,6 +126,7 @@ const handleDeleteVideo = () => {
 
             setVideoUrl(undefined);
             setRecordedUrl(null);
+            setVideoTitle("");
 
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: true,
@@ -154,6 +161,7 @@ const handleDeleteVideo = () => {
                 });
 
                 setFile(file);
+                setVideoTitle("recorded-video");
                 setVideoUrl(url);
 
                 setRecordedUrl(url);
@@ -282,8 +290,18 @@ const stopRecording = () => {
                             <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                                 <div className="flex-1">
                                     <h2 className="text-xl font-semibold mb-2">
-                                        {file?.name}
+                                        {videoTitle || file?.name}
                                     </h2>
+                                    <div className="mb-3">
+                                        <label className="mb-1 block text-sm text-slate-300">Video title</label>
+                                        <input
+                                            type="text"
+                                            value={videoTitle}
+                                            onChange={(e) => setVideoTitle(e.target.value)}
+                                            placeholder="ตั้งชื่อวิดีโอก่อนส่งออก"
+                                            className="w-full md:max-w-md rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
+                                        />
+                                    </div>
                                     {file && (
                                         <p className="text-slate-400 text-sm">
                                             ขนาดไฟล์: {(file.size / (1024 * 1024)).toFixed(2)} MB
