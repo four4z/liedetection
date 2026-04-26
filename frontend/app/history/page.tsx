@@ -167,6 +167,7 @@ export default function HistoryPage() {
                                     <Link
                                         key={item.id}
                                         href={`/video/${item.videoId}`}
+                                        prefetch={false}
                                         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 rounded-lg px-3 py-2 bg-slate-800 hover:bg-slate-700 transition-colors"
                                     >
                                         <div className="flex items-center gap-3">
