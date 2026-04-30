@@ -235,7 +235,7 @@ export const videosApi = {
             method: "POST",
             token,
             // backend expects snake_case keys per VideoLinkSubmit schema
-            body: { video_url: videoUrl, video: title },
+            body: { videoUrl, title },
         }),
 
     triggerAnalysis: (videoId: string) =>
