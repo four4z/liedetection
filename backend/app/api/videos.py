@@ -122,6 +122,7 @@ async def upload_video(
 
     video_doc = {
         "user_id": str(current_user["_id"]) if current_user else None,
+        "session_token": session_token,
         "video": video_name,
         "video_url": video_data.video_url,
         "thumbnail_url": video_data.thumbnail_url,
