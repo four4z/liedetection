@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, List
 import uuid
 from bson import ObjectId
@@ -10,6 +10,7 @@ from app.api.auth import get_current_user, get_optional_user
 from app.ai.analyzer import analyze_video
 
 router = APIRouter()
+HISTORY_DEDUP_WINDOW_SECONDS = 30
 
 
 @router.post("/upload", response_model=VideoUpload)
@@ -85,11 +86,23 @@ async def get_video(
     # Log view in history if user is logged in
     if current_user:
         history = get_history_collection()
-        await history.insert_one({
-            "userId": str(current_user["_id"]),
-            "videoId": video_id,
-            "viewedAt": datetime.utcnow()
-        })
+        now = datetime.utcnow()
+        dedup_threshold = now - timedelta(seconds=HISTORY_DEDUP_WINDOW_SECONDS)
+        latest_log = await history.find_one(
+            {
+                "userId": str(current_user["_id"]),
+                "videoId": video_id,
+                "viewedAt": {"$gte": dedup_threshold},
+            },
+            sort=[("viewedAt", -1)],
+        )
+
+        if not latest_log:
+            await history.insert_one({
+                "userId": str(current_user["_id"]),
+                "videoId": video_id,
+                "viewedAt": now
+            })
     
     return VideoResponse(
         id=str(video["_id"]),

@@ -1,31 +1,57 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/lib/auth";
-import { ApiHistoryLog, historyApi } from "@/lib/api";
+import { ApiHistoryLog, ApiVideo, historyApi, videosApi } from "@/lib/api";
+import VideoList from "../component/VideoList";
 
 const PAGE_SIZE = 20;
-
-const formatDateTime = (value: string) => {
-    return new Date(value).toLocaleDateString("th-TH", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    });
-};
 
 export default function HistoryPage() {
     const { token, isLoading: authLoading } = useAuth();
     const [logs, setLogs] = useState<ApiHistoryLog[]>([]);
+    const [historyVideos, setHistoryVideos] = useState<ApiVideo[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isClearing, setIsClearing] = useState(false);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(false);
+
+    const mapLogsToVideos = useCallback(async (items: ApiHistoryLog[]) => {
+        if (!token) {
+            setHistoryVideos([]);
+            return;
+        }
+
+        const allVideos = await videosApi.listMine(token, 0, 200);
+        const videoById = new Map(allVideos.map((video) => [video.id, video]));
+
+        const firstSeenViewedAt = new Map<string, string>();
+        for (const item of items) {
+            if (!firstSeenViewedAt.has(item.videoId)) {
+                firstSeenViewedAt.set(item.videoId, item.viewedAt);
+            }
+        }
+
+        const mapped = Array.from(firstSeenViewedAt.entries())
+            .map(([videoId, viewedAt]) => {
+                const video = videoById.get(videoId);
+                if (!video) {
+                    return null;
+                }
+
+                return {
+                    ...video,
+                    // Keep card layout identical to list page while showing last viewed time in subtitle.
+                    uploaded_at: viewedAt,
+                } as ApiVideo;
+            })
+            .filter((video): video is ApiVideo => video !== null);
+
+        setHistoryVideos(mapped);
+    }, [token]);
 
     const loadHistory = useCallback(async (skip = 0, append = false) => {
         try {
@@ -37,12 +63,24 @@ export default function HistoryPage() {
 
             if (!token) {
                 setLogs([]);
+                setHistoryVideos([]);
                 setHasMore(false);
                 return;
             }
 
             const data = await historyApi.list(token, skip, PAGE_SIZE);
-            setLogs((prev) => (append ? [...prev, ...data] : data));
+
+            if (append) {
+                setLogs((prev) => {
+                    const nextLogs = [...prev, ...data];
+                    void mapLogsToVideos(nextLogs);
+                    return nextLogs;
+                });
+            } else {
+                setLogs(data);
+                await mapLogsToVideos(data);
+            }
+
             setHasMore(data.length === PAGE_SIZE);
             setError(null);
         } catch (err) {
@@ -54,7 +92,7 @@ export default function HistoryPage() {
                 setLoading(false);
             }
         }
-    }, [token]);
+    }, [token, mapLogsToVideos]);
 
     useEffect(() => {
         if (!authLoading) {
@@ -69,22 +107,6 @@ export default function HistoryPage() {
 
         await loadHistory(logs.length, true);
     };
-
-    const groupedByDay = useMemo(() => {
-        return logs.reduce<Record<string, ApiHistoryLog[]>>((acc, item) => {
-            const dayKey = new Date(item.viewedAt).toLocaleDateString("th-TH", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-            });
-
-            if (!acc[dayKey]) {
-                acc[dayKey] = [];
-            }
-            acc[dayKey].push(item);
-            return acc;
-        }, {});
-    }, [logs]);
 
     const handleClear = async () => {
         if (!token) {
@@ -159,40 +181,16 @@ export default function HistoryPage() {
 
             {!loading && !error && token && logs.length > 0 && (
                 <div className="space-y-6">
-                    {Object.entries(groupedByDay).map(([day, items]) => (
-                        <section key={day} className="bg-greay-custom rounded-xl p-3 sm:p-4">
-                            <h2 className="text-white font-semibold mb-3">{day}</h2>
-                            <div className="space-y-2">
-                                {items.map((item) => (
-                                    <Link
-                                        key={item.id}
-                                        href={`/video/${item.videoId}`}
-                                        prefetch={false}
-                                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 rounded-lg px-3 py-2 bg-slate-800 hover:bg-slate-700 transition-colors"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <Icon icon="mdi:play-circle-outline" width="20" height="20" className="text-gray-300" />
-                                            <span className="text-white text-sm break-all">Video ID: {item.videoId}</span>
-                                        </div>
-                                        <span className="text-gray-400 text-xs">{formatDateTime(item.viewedAt)}</span>
-                                    </Link>
-                                ))}
-                            </div>
-                        </section>
-                    ))}
-
-                    <div className="flex justify-center">
-                        {hasMore ? (
-                            <button
-                                onClick={handleLoadMore}
-                                disabled={isLoadingMore}
-                                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
-                            >
-                                {isLoadingMore ? "กำลังโหลด..." : "โหลดเพิ่ม"}
-                            </button>
-                        ) : (
-                            <span className="text-sm text-gray-400">แสดงครบทั้งหมดแล้ว</span>
-                        )}
+                    <div className="rounded-xl p-3 sm:p-4 ">
+                        <VideoList
+                            videos={historyVideos}
+                            variant="stack"
+                            compact
+                            showSearch={false}
+                            hasMore={hasMore}
+                            isLoadingMore={isLoadingMore}
+                            onLoadMore={handleLoadMore}
+                        />
                     </div>
                 </div>
             )}
