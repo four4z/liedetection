@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import auth, videos, history
-from app.ai.api import router as ai_router
 from app.database.connection import connect_to_mongo, close_mongo_connection
 
 app = FastAPI(
@@ -13,7 +12,11 @@ app = FastAPI(
 # CORS middleware for React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # React dev server
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        # "https://86cz9rff-3000.asse.devtunnels.ms",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,7 +35,6 @@ async def shutdown():
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(videos.router, prefix="/api/videos", tags=["Videos"])
 app.include_router(history.router, prefix="/api/history", tags=["History"])
-app.include_router(ai_router, prefix="/api/ai", tags=["AI"])
 
 @app.get("/")
 async def root():

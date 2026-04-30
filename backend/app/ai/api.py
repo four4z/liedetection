@@ -1,7 +1,8 @@
 import os
+import math
 import shutil
 import numpy as np
-import base64
+from pathlib import Path
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse
 
@@ -48,12 +49,26 @@ async def analyze_video(
         if video_url:
             download_video(video_url, temp_video_path)
         elif file:
-            if not file.filename.lower().endswith(('.mp4', '.avi', '.mov')):
-                raise HTTPException(status_code=400, detail="Invalid file type. Please upload a video.")
+            ext = Path(file.filename).suffix.lower()
+            if ext not in ('.mp4', '.avi', '.mov', '.webm'):
+                raise HTTPException(status_code=400, detail="Invalid file type. Allowed: .mp4, .avi, .mov, .webm")
 
             file_bytes = await file.read()
-            with open(temp_video_path, "wb") as f:
-                f.write(file_bytes)
+
+            if ext == '.webm':
+                # Save as .webm first, then transcode to .mp4 for pipeline compatibility
+                import moviepy.editor as _mp
+                temp_webm = temp_video_path.replace('.mp4', '.webm')
+                with open(temp_webm, "wb") as f:
+                    f.write(file_bytes)
+                print(f"[api] Transcoding uploaded .webm → .mp4…")
+                with _mp.VideoFileClip(temp_webm) as clip:
+                    clip.write_videofile(temp_video_path, codec="libx264",
+                                         audio_codec="aac", logger=None)
+                os.remove(temp_webm)
+            else:
+                with open(temp_video_path, "wb") as f:
+                    f.write(file_bytes)
         else:
             raise HTTPException(status_code=400, detail="Provide either a file or a video URL")
 
@@ -74,6 +89,12 @@ async def analyze_video(
             display_p = p if p > thresh else (1.0 - p)
             return round(display_p, 4)
 
+        def fmt_ts(sec):
+            """Convert seconds to HH:MM:SS string."""
+            total = int(math.floor(sec))
+            h, m, s = total // 3600, (total % 3600) // 60, total % 60
+            return f"{h:02d}:{m:02d}:{s:02d}"
+
         for start_sec, end_sec in segments:
             advance_segment()  # increment segment counter for appearance logging
             cleanup_temp_dirs()
@@ -91,29 +112,16 @@ async def analyze_video(
             if result is not None:
                 segment_strongest_probs.append(result["strongest_confidence_score"])
 
-                # GRAB A REPRESENTATIVE UPPER-BODY FRAME AND ENCODE TO BASE64
-                face_b64 = None
-                upper_dir = os.path.join(TEMP_FRAMES, "upper")
-                if os.path.exists(upper_dir):
-                    upper_frames = sorted([f for f in os.listdir(upper_dir) if f.endswith('.jpg')])
-                    if upper_frames:
-                        mid_idx = len(upper_frames) // 2
-                        frame_path = os.path.join(upper_dir, upper_frames[mid_idx])
-                        with open(frame_path, "rb") as img_file:
-                            face_b64 = base64.b64encode(img_file.read()).decode('utf-8')
-
                 segment_data = {
-                    "timestamp":                       f"{start_sec:.2f}",
-                    "raw_timestamp":                   round(float(start_sec), 3),
-                    "face_confidence_score":           format_conf(result["face_confidence_score"], threshold),
-                    "face_verdict":                    result["face_verdict"],
-                    "arms_confidence_score":           format_conf(result["arms_confidence_score"], threshold),
-                    "arms_verdict":                    result["arms_verdict"],
+                    "timestamp":                        f"{fmt_ts(start_sec)}–{fmt_ts(end_sec)}",
+                    "face_confidence_score":            format_conf(result["face_confidence_score"], threshold),
+                    "face_verdict":                     result["face_verdict"],
+                    "arms_confidence_score":            format_conf(result["arms_confidence_score"], threshold),
+                    "arms_verdict":                     result["arms_verdict"],
                     "average_confidence_score_segment": format_conf(result["average_confidence_score_segment"], threshold),
-                    "verdict":                         result["verdict"],
-                    "parts_indicate":                  result["parts_indicate"],
-                    "average_based_verdict":           result["average_based_verdict"],
-                    "face_image_b64":                  face_b64,
+                    "verdict":                          result["verdict"],
+                    "parts_indicate":                   result["parts_indicate"],
+                    "average_based_verdict":            result["average_based_verdict"],
                 }
                 json_report["segments"].append(segment_data)
 
