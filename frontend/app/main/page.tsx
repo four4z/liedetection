@@ -141,8 +141,15 @@ const handleDeleteVideo = () => {
             streamRef.current = stream;
 
             if (videoPreviewRef.current) {
-                videoPreviewRef.current.srcObject = stream;
-                await videoPreviewRef.current.play();
+                // ensure video element is ready for autoplay and inline playback
+                videoPreviewRef.current.muted = true;
+                videoPreviewRef.current.playsInline = true;
+                try {
+                    videoPreviewRef.current.srcObject = stream;
+                    await videoPreviewRef.current.play();
+                } catch (playErr) {
+                    console.warn("Preview play() failed:", playErr);
+                }
             }
 
             const mediaRecorder = new MediaRecorder(stream);
@@ -151,39 +158,66 @@ const handleDeleteVideo = () => {
             const chunks: Blob[] = [];
 
             mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0) {
+                if (event.data && event.data.size > 0) {
                     chunks.push(event.data);
                 }
             };
 
-            mediaRecorder.onstop = () => {
+            mediaRecorder.onstop = async () => {
+                try {
+                    const blob = new Blob(chunks, { type: "video/webm" });
+                    const url = URL.createObjectURL(blob);
 
-                const blob = new Blob(chunks, { type: "video/webm" });
-                const url = URL.createObjectURL(blob);
+                    // ensure metadata is loaded so duration is available
+                    const tmp = document.createElement("video");
+                    tmp.preload = "metadata";
+                    tmp.muted = true;
+                    tmp.playsInline = true;
+                    tmp.src = url;
 
-                const file = new File([blob], "recorded-video.webm", {
-                    type: "video/webm",
-                });
+                    await new Promise<void>((resolve, reject) => {
+                        const onLoaded = () => {
+                            cleanup();
+                            resolve();
+                        };
+                        const onError = (e: any) => {
+                            cleanup();
+                            reject(e);
+                        };
+                        function cleanup() {
+                            tmp.onloadedmetadata = null;
+                            tmp.onerror = null;
+                        }
+                        tmp.onloadedmetadata = onLoaded;
+                        tmp.onerror = onError;
+                    }).catch((e) => {
+                        console.warn("Failed to load recorded metadata:", e);
+                    });
 
-                setFile(file);
-                setVideoTitle("recorded-video");
-                setVideoUrl(url);
+                    const file = new File([blob], "recorded-video.webm", {
+                        type: "video/webm",
+                    });
 
-                setRecordedUrl(url);
+                    setFile(file);
+                    setVideoTitle("recorded-video");
+                    setVideoUrl(url);
+                    setRecordedUrl(url);
+                } finally {
+                    setIsRecording(false);
 
-                setIsRecording(false);
+                    // stop stream หลัง record เสร็จ
+                    if (streamRef.current) {
+                        streamRef.current.getTracks().forEach(track => track.stop());
+                    }
 
-                // stop stream หลัง record เสร็จ
-                if (streamRef.current) {
-                    streamRef.current.getTracks().forEach(track => track.stop());
-                }
-
-                if (videoPreviewRef.current) {
-                    videoPreviewRef.current.srcObject = null;
+                    if (videoPreviewRef.current) {
+                        videoPreviewRef.current.srcObject = null;
+                    }
                 }
             };
 
-            mediaRecorder.start(1000);
+            // start without a timeslice so we get one blob on stop (avoids partial/streamed blobs)
+            mediaRecorder.start();
             setIsRecording(true);
 
             console.log("Recording started");
@@ -344,6 +378,16 @@ const stopRecording = () => {
                                         </button>
                                     </div>
                                 </div>
+                                {recordedUrl && (
+                                    <div className="mt-3">
+                                        <button
+                                            onClick={() => window.open(recordedUrl, "_blank")}
+                                            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold transition"
+                                        >
+                                            ดูไฟล์ที่อัด
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
