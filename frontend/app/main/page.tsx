@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { videosApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -16,6 +17,7 @@ export default function Main() {
     const streamRef = useRef<MediaStream | null>(null);
     const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
     const { token } = useAuth();
+    const router = useRouter();
 
     const getDefaultTitle = (name: string) => name.replace(/\.[^/.]+$/, "");
 
@@ -110,9 +112,10 @@ const handleDeleteVideo = () => {
             await videosApi.triggerAnalysis(backendData.id);
 
             console.log("Video submission successful:", backendData);
-            alert("วิดีโอถูกส่งและเริ่มวิเคราะห์แล้ว");
 
+            // clean up local resources and navigate to the new video's detail page
             handleDeleteVideo();
+            router.push(`/video/${backendData.id}`);
         } catch (error) {
             console.error("Error analyzing video:", error);
             alert(`เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : "Unknown error"}`);
