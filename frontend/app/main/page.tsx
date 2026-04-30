@@ -3,6 +3,7 @@ import React, { useState, useRef } from "react";
 import { Icon } from "@iconify/react";
 import { videosApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 
 export default function Main() {
     const [file, setFile] = useState<File | null>(null);
@@ -16,6 +17,7 @@ export default function Main() {
     const streamRef = useRef<MediaStream | null>(null);
     const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
     const { token } = useAuth();
+    const router = useRouter();
 
     const getDefaultTitle = (name: string) => name.replace(/\.[^/.]+$/, "");
 
@@ -114,6 +116,7 @@ const handleDeleteVideo = () => {
 
             // clean up local resources and navigate to the new video's detail page
             handleDeleteVideo();
+            router.push(`/video/${backendData.id}`);
             
         } catch (error) {
             console.error("Error analyzing video:", error);
