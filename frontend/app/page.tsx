@@ -21,7 +21,7 @@ export default function Home() {
             <div className="flex gap-4 items-center">
               {user ? (
                 <span className="border-glass-custom bg-glass-custom p-2 px-6 rounded-xl">
-                  {user.email}
+                  {user.username}
                 </span>
               ) : (
                 <>
