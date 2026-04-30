@@ -1,11 +1,34 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api";
+
+type GoogleCredentialResponse = {
+    credential: string;
+};
+
+type GoogleIdInitializeConfig = {
+    client_id: string;
+    callback: (response: GoogleCredentialResponse) => void;
+    use_fedcm_for_prompt?: boolean;
+};
+
+declare global {
+    interface Window {
+        google?: {
+            accounts: {
+                id: {
+                    initialize: (config: GoogleIdInitializeConfig) => void;
+                    prompt: () => void;
+                };
+            };
+        };
+    }
+}
 
 const getErrorMessage = (detail: unknown, fallback: string) => {
     if (typeof detail === "string" && detail.trim()) {
@@ -50,8 +73,75 @@ function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+    const [isGoogleReady, setIsGoogleReady] = useState(false);
     const { login } = useAuth();
     const router = useRouter();
+    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+
+    const handleGoogleCredential = useCallback(
+        async (response: GoogleCredentialResponse) => {
+            if (!response.credential) {
+                alert("Google credential is missing");
+                return;
+            }
+
+            try {
+                setIsGoogleLoading(true);
+                const data = await authApi.google(response.credential);
+                const meData = await authApi.me(data.access_token);
+                login(data.access_token, meData);
+                router.push("/");
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : getErrorMessage(null, "Google login failed");
+                alert(message);
+            } finally {
+                setIsGoogleLoading(false);
+            }
+        },
+        [login, router]
+    );
+
+    useEffect(() => {
+        if (!googleClientId) {
+            return;
+        }
+
+        const initializeGoogle = () => {
+            if (!window.google?.accounts?.id) {
+                return;
+            }
+
+            window.google.accounts.id.initialize({
+                client_id: googleClientId,
+                callback: handleGoogleCredential,
+                // Fallback to non-FedCM flow when browsers fail to retrieve FedCM token.
+                use_fedcm_for_prompt: false,
+            });
+
+            setIsGoogleReady(true);
+        };
+
+        if (window.google?.accounts?.id) {
+            initializeGoogle();
+            return;
+        }
+
+        const existingScript = document.querySelector<HTMLScriptElement>('script[src="https://accounts.google.com/gsi/client"]');
+        if (existingScript) {
+            existingScript.addEventListener("load", initializeGoogle);
+            return () => existingScript.removeEventListener("load", initializeGoogle);
+        }
+
+        const script = document.createElement("script");
+        script.src = "https://accounts.google.com/gsi/client";
+        script.async = true;
+        script.defer = true;
+        script.addEventListener("load", initializeGoogle);
+        document.head.appendChild(script);
+
+        return () => script.removeEventListener("load", initializeGoogle);
+    }, [googleClientId, handleGoogleCredential]);
 
     const handleLogin = async () => {
         try {
@@ -73,6 +163,21 @@ function LoginPage() {
             setIsLoading(false);
         }
     };
+
+    const handleGoogleLogin = () => {
+        if (!googleClientId) {
+            alert("NEXT_PUBLIC_GOOGLE_CLIENT_ID is not configured");
+            return;
+        }
+
+        if (!isGoogleReady || !window.google?.accounts?.id) {
+            alert("Google Sign-In is not ready yet");
+            return;
+        }
+
+        window.google.accounts.id.prompt();
+    };
+
     return (
         <div className=' flex justify-center items-center min-h-screen'>
             <div className="min-h-screen flex items-center justify-center ">
@@ -129,7 +234,11 @@ function LoginPage() {
                     </div>
 
                     <div className="flex justify-center">
-                        <button className=" rounded-full border border-white/20 p-2 text-sm hover:bg-white/10 transition">
+                        <button
+                            onClick={handleGoogleLogin}
+                            disabled={isGoogleLoading}
+                            className="rounded-full border border-white/20 p-2 text-sm hover:bg-white/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                             <Icon icon="logos:google-icon" width="25" height="25" />
                         </button>
                     </div>

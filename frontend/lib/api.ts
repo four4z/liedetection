@@ -207,6 +207,12 @@ export const authApi = {
             body: { email, password },
         }),
 
+    google: (credential: string) =>
+        apiRequest<ApiTokenResponse>("/api/auth/google", {
+            method: "POST",
+            body: { credential },
+        }),
+
     register: (email: string, username: string, password: string) =>
         apiRequest<ApiTokenResponse>("/api/auth/register", {
             method: "POST",
