@@ -336,15 +336,17 @@ useEffect(() => {
 
                         {/* Upload Buttons */}
                         <div className="flex gap-4">
-                            <label className="cursor-pointer inline-flex items-center gap-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 px-5 py-2 rounded-md font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-sky-500">
-                                <span>Choose Video File</span>
-                                <input
-                                    type="file"
-                                    accept="video/*"
-                                    onChange={handleFileChange}
-                                    className="hidden"
-                                />
-                            </label>
+                            {!isRecording && (
+                                <label className="cursor-pointer inline-flex items-center gap-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 px-5 py-2 rounded-md font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                    <span>Choose Video File</span>
+                                    <input
+                                        type="file"
+                                        accept="video/*"
+                                        onChange={handleFileChange}
+                                        className="hidden"
+                                    />
+                                </label>
+                            )}
 
                             {!isRecording ? (
                                 <button
