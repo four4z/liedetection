@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import { videosApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -15,7 +15,9 @@ export default function Main() {
     const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
+    const recordingStreamRef = useRef<MediaStream | null>(null);
     const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
+    const log = (...args: any[]) => console.debug("[Recorder]", ...args);
     const { token } = useAuth();
     const router = useRouter();
 
@@ -56,6 +58,7 @@ export default function Main() {
     };
 
 const handleDeleteVideo = () => {
+    log("handleDeleteVideo called");
     if (videoUrl) {
         URL.revokeObjectURL(videoUrl);
     }
@@ -65,11 +68,18 @@ const handleDeleteVideo = () => {
     }
 
     if (streamRef.current) {
+        log("Stopping preview stream tracks", streamRef.current.id, streamRef.current.getTracks().map(t => ({ id: t.id, kind: t.kind })) );
         streamRef.current.getTracks().forEach(track => track.stop());
+    }
+
+    if (recordingStreamRef.current) {
+        log("Stopping recordingStream tracks", recordingStreamRef.current.id, recordingStreamRef.current.getTracks().map(t => ({ id: t.id, kind: t.kind })) );
+        recordingStreamRef.current.getTracks().forEach(track => track.stop());
     }
 
     mediaRecorderRef.current = null;
     streamRef.current = null;
+    recordingStreamRef.current = null;
 
     setFile(null);
     setVideoUrl(undefined);
@@ -139,6 +149,12 @@ const handleDeleteVideo = () => {
             });
 
             streamRef.current = stream;
+            log("getUserMedia -> stream", stream.id, stream.getTracks().map(t => ({ id: t.id, kind: t.kind })) );
+
+            // Ensure the preview element is mounted before assigning srcObject.
+            // We set `isRecording` here so the preview <video> renders and then wait one frame.
+            setIsRecording(true);
+            await new Promise(requestAnimationFrame);
 
             if (videoPreviewRef.current) {
                 // ensure video element is ready for autoplay and inline playback
@@ -146,14 +162,26 @@ const handleDeleteVideo = () => {
                 videoPreviewRef.current.playsInline = true;
                 try {
                     videoPreviewRef.current.srcObject = stream;
+                    log("Assigned preview.srcObject", { previewRef: !!videoPreviewRef.current, streamId: stream.id });
                     await videoPreviewRef.current.play();
+                    log("preview.play() succeeded");
                 } catch (playErr) {
                     console.warn("Preview play() failed:", playErr);
                 }
+            } else {
+                log("Warning: preview element not found after mounting");
             }
 
-            const mediaRecorder = new MediaRecorder(stream);
+            // Clone the stream for recording so the preview and recorder use separate tracks.
+            // This avoids browser/hardware encoder conflicts that can black out the preview.
+            const recordingStream = stream.clone();
+            recordingStreamRef.current = recordingStream;
+            log("Recording stream cloned", recordingStream.id, recordingStream.getTracks().map(t => ({ id: t.id, kind: t.kind })) );
+
+            const mediaRecorder = new MediaRecorder(recordingStream);
             mediaRecorderRef.current = mediaRecorder;
+
+            log("MediaRecorder created", { state: mediaRecorder.state, mimeType: (mediaRecorder as any).mimeType });
 
             const chunks: Blob[] = [];
 
@@ -205,7 +233,13 @@ const handleDeleteVideo = () => {
                 } finally {
                     setIsRecording(false);
 
-                    // stop stream หลัง record เสร็จ
+                    // stop cloned recording stream tracks
+                    if (recordingStreamRef.current) {
+                        recordingStreamRef.current.getTracks().forEach(track => track.stop());
+                        recordingStreamRef.current = null;
+                    }
+
+                    // stop original preview stream if present
                     if (streamRef.current) {
                         streamRef.current.getTracks().forEach(track => track.stop());
                     }
@@ -233,6 +267,29 @@ const stopRecording = () => {
         mediaRecorderRef.current.stop();
     }
 };
+
+// Cleanup on unmount: stop any open streams and recording.
+useEffect(() => {
+    return () => {
+        try {
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+                mediaRecorderRef.current.stop();
+            }
+
+            if (recordingStreamRef.current) {
+                recordingStreamRef.current.getTracks().forEach(t => t.stop());
+                recordingStreamRef.current = null;
+            }
+
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(t => t.stop());
+                streamRef.current = null;
+            }
+        } catch (e) {
+            // ignore cleanup errors
+        }
+    };
+}, []);
 
     return (
         <div className="min-h-screen p-8 text-white   ">
