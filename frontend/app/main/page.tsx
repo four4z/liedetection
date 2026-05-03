@@ -295,7 +295,7 @@ useEffect(() => {
         <div className="min-h-screen p-8 text-white   ">
             <div className="max-w-4xl mx-auto">
                 {isRecording && (
-                    <div className="mb-6 bg-black rounded-2xl overflow-hidden">
+                    <div className="mb-6 bg-linear-to-r from-gray-900 to-black rounded-2xl overflow-hidden ring-1 ring-white/5">
                         <video
                             ref={videoPreviewRef}
                             autoPlay
@@ -336,8 +336,8 @@ useEffect(() => {
 
                         {/* Upload Buttons */}
                         <div className="flex gap-4">
-                            <label className="cursor-pointer bg-slate-700 hover:bg-blue-950 px-6 py-2 rounded-lg font-semibold transition">
-                                Choose Video File
+                            <label className="cursor-pointer inline-flex items-center gap-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 px-5 py-2 rounded-md font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                <span>Choose Video File</span>
                                 <input
                                     type="file"
                                     accept="video/*"
@@ -349,7 +349,7 @@ useEffect(() => {
                             {!isRecording ? (
                                 <button
                                     onClick={startRecording}
-                                    className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-semibold transition"
+                                    className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2 rounded-md font-semibold shadow-md transition"
                                 >
                                     <Icon icon="mdi:video-plus" width="20" height="20" className="inline mr-2" />
                                     Record Video
@@ -357,7 +357,7 @@ useEffect(() => {
                             ) : (
                                 <button
                                     onClick={stopRecording}
-                                    className="bg-red-800 hover:bg-red-900 px-6 py-2 rounded-lg font-semibold transition"
+                                    className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2 rounded-md font-semibold shadow-md transition"
                                 >
                                     <Icon icon="mdi:stop-circle" width="20" height="20" className="inline mr-2" />
                                     Stop Recording
@@ -385,9 +385,9 @@ useEffect(() => {
                         <div className="bg-greay-custom rounded-2xl p-6">
                             <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                                 <div className="flex-1">
-                                    <h2 className="text-xl font-semibold mb-2">
+                                    {/* <h2 className="text-xl font-semibold mb-2">
                                         {videoTitle || file?.name}
-                                    </h2>
+                                    </h2> */}
                                     <div className="mb-3">
                                         <label className="mb-1 block text-sm text-slate-300">Video title</label>
                                         <input
@@ -410,7 +410,7 @@ useEffect(() => {
                                         <button
                                             onClick={handleStartAnalysis}
                                             disabled={isAnalyzing}
-                                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-semibold transition"
+                                            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-md font-semibold shadow transition"
                                         >
                                             <Icon
                                                 icon="mdi:check-circle-outline"
@@ -424,7 +424,7 @@ useEffect(() => {
                                         <button
                                             onClick={handleDeleteVideo}
                                             disabled={isAnalyzing}
-                                            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-semibold transition"
+                                            className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-md font-semibold shadow transition"
                                         >
                                             <Icon
                                                 icon="mdi:close-circle-outline"
@@ -435,16 +435,7 @@ useEffect(() => {
                                         </button>
                                     </div>
                                 </div>
-                                {recordedUrl && (
-                                    <div className="mt-3">
-                                        <button
-                                            onClick={() => window.open(recordedUrl, "_blank")}
-                                            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold transition"
-                                        >
-                                            ดูไฟล์ที่อัด
-                                        </button>
-                                    </div>
-                                )}
+
                             </div>
                         </div>
                     </div>
