@@ -316,60 +316,70 @@ useEffect(() => {
                         onDrop={handleDrop}
                         className={`w-full rounded-2xl border-2 border-dashed
                         transition-all duration-300
-                        ${dragActive ? "border-slate-700 bg-slate-800" : "border-slate-600 bg-slate-900"}
+                        ${isRecording ? "border-transparent bg-transparent" : dragActive ? "border-slate-700 bg-slate-800" : "border-slate-600 bg-slate-900"}
                         p-12 flex flex-col items-center gap-6 cursor-pointer`}
                     >
-                        {/* Icon */}
-                        <div className="p-6 rounded-2xl bg-slate-700">
-                            <Icon
-                                icon="mdi:video-outline"
-                                width="40"
-                                height="40"
-                                className="shrink-0"
-                            />
-                        </div>
-
-                        {/* Text */}
-                        <p className="text-slate-300 text-center text-lg">
-                            Drag and drop your video here, or
-                        </p>
-
-                        {/* Upload Buttons */}
-                        <div className="flex gap-4">
-                            {!isRecording && (
-                                <label className="cursor-pointer inline-flex items-center gap-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 px-5 py-2 rounded-md font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-sky-500">
-                                    <span>Choose Video File</span>
-                                    <input
-                                        type="file"
-                                        accept="video/*"
-                                        onChange={handleFileChange}
-                                        className="hidden"
+                        {isRecording ? (
+                            <div className="flex flex-col items-center justify-center gap-5 py-10">
+                                <div className="relative flex items-center justify-center">
+                                    <span className="absolute h-20 w-20 rounded-full bg-rose-500/25 animate-ping" />
+                                    <span className="absolute h-24 w-24 rounded-full border border-rose-400/20" />
+                                    <button
+                                        onClick={stopRecording}
+                                        aria-label="Stop recording"
+                                        className="relative flex h-20 w-20 items-center justify-center rounded-full bg-rose-600 text-white shadow-[0_0_0_8px_rgba(244,63,94,0.12)] transition-transform duration-200 hover:scale-105 active:scale-95"
+                                    >
+                                        <Icon icon="mdi:stop" width="34" height="34" />
+                                    </button>
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-xl font-semibold text-slate-100">Recording...</p>
+                                    <p className="mt-1 text-sm text-slate-400">กดปุ่มวงกลมเพื่อหยุดอัด</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Icon */}
+                                <div className="p-6 rounded-2xl bg-slate-700">
+                                    <Icon
+                                        icon="mdi:video-outline"
+                                        width="40"
+                                        height="40"
+                                        className="shrink-0"
                                     />
-                                </label>
-                            )}
+                                </div>
 
-                            {!isRecording ? (
-                                <button
-                                    onClick={startRecording}
-                                    className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2 rounded-md font-semibold shadow-md transition"
-                                >
-                                    <Icon icon="mdi:video-plus" width="20" height="20" className="inline mr-2" />
-                                    Record Video
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={stopRecording}
-                                    className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2 rounded-md font-semibold shadow-md transition"
-                                >
-                                    <Icon icon="mdi:stop-circle" width="20" height="20" className="inline mr-2" />
-                                    Stop Recording
-                                </button>
-                            )}
-                        </div>
+                                {/* Text */}
+                                <p className="text-slate-300 text-center text-lg">
+                                    Drag and drop your video here, or
+                                </p>
 
-                        <p className="text-sm text-slate-400">
-                            Supports .mp4, .webm, .ogg, and .mov formats
-                        </p>
+                                {/* Upload Buttons */}
+                                <div className="flex gap-4">
+                                    <label className="cursor-pointer inline-flex items-center gap-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 px-5 py-2 rounded-md font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                        <span>Choose Video File</span>
+                                        <input
+                                            type="file"
+                                            accept="video/*"
+                                            onChange={handleFileChange}
+                                            className="hidden"
+                                        />
+                                    </label>
+
+                                    <button
+                                        onClick={startRecording}
+                                        className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2 rounded-md font-semibold shadow-md transition"
+                                    >
+                                        <Icon icon="mdi:video-plus" width="20" height="20" className="inline mr-2" />
+                                        Record Video
+                                    </button>
+                                </div>
+
+                                <p className="text-sm text-slate-400">
+                                    Supports .mp4, .webm, .ogg, and .mov formats
+                                </p>
+                            </>
+                        )}
                     </div>
                 ) : (
                     /* Video Display Area */
