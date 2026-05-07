@@ -3,10 +3,13 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import datetime, timedelta
 from typing import Optional
 import os
+import random
+import string
 import httpx
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from bson import ObjectId
+from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 
 from app.models.schemas import (
     UserCreate, UserLogin, UserResponse, GoogleAuth, Token, TokenData
@@ -22,6 +25,21 @@ SECRET_KEY = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
+# OTP settings
+OTP_EXPIRE_MINUTES = 10
+
+# Mail settings
+mail_conf = ConnectionConfig(
+    MAIL_USERNAME=os.getenv("MAIL_USERNAME", ""),
+    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD", ""),
+    MAIL_FROM=os.getenv("MAIL_FROM", ""),
+    MAIL_PORT=int(os.getenv("MAIL_PORT", 587)),
+    MAIL_SERVER=os.getenv("MAIL_SERVER", "smtp.gmail.com"),
+    MAIL_STARTTLS=True,
+    MAIL_SSL_TLS=False,
+    USE_CREDENTIALS=True,
+)
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
@@ -29,6 +47,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
+
+
+def generate_otp() -> str:
+    return "".join(random.choices(string.digits, k=6))
 
 
 def create_access_token(data: dict) -> str:
@@ -214,3 +236,100 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 async def logout(current_user: dict = Depends(get_current_user)):
     """Logout current user. Frontend should delete the stored token."""
     return {"message": "Logged out successfully"}
+
+
+@router.post("/forgotpassword")
+async def forgot_password(email: str):
+    """Send OTP to email for password reset"""
+    users = get_users_collection()
+    user = await users.find_one({"email": email})
+
+    # Always return same message to prevent email enumeration
+    if not user:
+        return {"message": "If that email is registered, an OTP has been sent."}
+
+    if user.get("authProvider") != "local":
+        raise HTTPException(status_code=400, detail="This account uses Google login. No password to reset.")
+
+    otp = generate_otp()
+    otp_expiry = datetime.utcnow() + timedelta(minutes=OTP_EXPIRE_MINUTES)
+
+    await users.update_one(
+        {"_id": user["_id"]},
+        {"$set": {
+            "resetOtp": get_password_hash(otp),
+            "resetOtpExpiry": otp_expiry
+        }}
+    )
+
+    message = MessageSchema(
+        subject="Your Password Reset OTP",
+        recipients=[email],
+        body=f"<h2>Your OTP is: <strong>{otp}</strong></h2><p>Expires in {OTP_EXPIRE_MINUTES} minutes.</p>",
+        subtype="html"
+    )
+    fm = FastMail(mail_conf)
+    await fm.send_message(message)
+
+    return {"message": "If that email is registered, an OTP has been sent."}
+
+
+@router.post("/verifyotp")
+async def verify_otp(email: str, otp: str):
+    """Verify OTP and return a short-lived reset token"""
+    users = get_users_collection()
+    user = await users.find_one({"email": email})
+
+    if not user or not user.get("resetOtp") or not user.get("resetOtpExpiry"):
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+
+    if datetime.utcnow() > user["resetOtpExpiry"]:
+        raise HTTPException(status_code=400, detail="OTP has expired")
+
+    if not verify_password(otp, user["resetOtp"]):
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+
+    # Clear OTP after successful verification (one-time use)
+    await users.update_one(
+        {"_id": user["_id"]},
+        {"$unset": {"resetOtp": "", "resetOtpExpiry": ""}}
+    )
+
+    reset_token = jwt.encode(
+        {
+            "user_id": str(user["_id"]),
+            "email": user["email"],
+            "purpose": "password_reset",
+            "exp": datetime.utcnow() + timedelta(minutes=15)
+        },
+        SECRET_KEY,
+        algorithm=ALGORITHM
+    )
+
+    return {"reset_token": reset_token}
+
+
+@router.post("/resetpassword")
+async def reset_password(reset_token: str, new_password: str, confirm_password: str):
+    """Reset password using the token from verifyotp"""
+    if new_password != confirm_password:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
+
+    try:
+        payload = jwt.decode(reset_token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("purpose") != "password_reset":
+            raise HTTPException(status_code=400, detail="Invalid reset token")
+        user_id = payload.get("user_id")
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+
+    users = get_users_collection()
+    await users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {"passwordHash": get_password_hash(new_password)}}
+    )
+
+    return {"message": "Password reset successfully"}
