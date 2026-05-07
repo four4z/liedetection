@@ -292,8 +292,9 @@ useEffect(() => {
 }, []);
 
     return (
-        <div className="min-h-screen p-8 text-white   ">
-            <div className="max-w-4xl mx-auto">
+        <div className="min-h-screen  p-8 text-white">
+            <div className="max-w-5xl mx-auto">
+                {/* Recording Preview */}
                 {isRecording && (
                     <div className="mb-6 bg-linear-to-r from-gray-900 to-black rounded-2xl overflow-hidden ring-1 ring-white/5">
                         <video
@@ -301,7 +302,7 @@ useEffect(() => {
                             autoPlay
                             muted
                             playsInline
-                            className="w-full max-h-96 object-cover"
+                            className="w-full max-h-96 object-cover bg-black"
                         />
                     </div>
                 )}
@@ -316,7 +317,7 @@ useEffect(() => {
                         onDrop={handleDrop}
                         className={`w-full rounded-2xl border-2 border-dashed
                         transition-all duration-300
-                        ${isRecording ? "border-transparent bg-transparent" : dragActive ? "border-slate-700 bg-slate-800" : "border-slate-600 bg-slate-900"}
+                        ${isRecording ? "border-transparent bg-transparent" : dragActive ? "border-slate-600 bg-slate-800/60" : "border-slate-700 bg-slate-900/40"}
                         p-12 flex flex-col items-center gap-6 cursor-pointer`}
                     >
                         {isRecording ? (
@@ -383,73 +384,64 @@ useEffect(() => {
                     </div>
                 ) : (
                     /* Video Display Area */
-                    <div className="space-y-6">
-                        {/* Video Player */}
-                        <div className="bg-black rounded-2xl overflow-hidden">
-                            <video
-                                src={videoUrl || recordedUrl || undefined}
-                                controls
-                                className="w-full h-auto max-h-96"
-                            />
-                        </div>
+                    <div className="w-full max-w-4xl aspect-video">
+                        {/* Main Video Panel */}
+                        <div className="flex flex-col gap-4">
+                            {/* Video Player */}
+                            <div className="rounded-2xl border border-slate-700/50 overflow-hidden bg-black">
+                                <video
+                                    src={videoUrl || recordedUrl || undefined}
+                                    controls
+                                    className="w-full h-auto max-h-96"
+                                />
+                            </div>
 
-                        {/* Video Info and Action Buttons */}
-                        <div className="bg-greay-custom rounded-2xl p-6">
-                            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-                                <div className="flex-1">
-                                    {/* <h2 className="text-xl font-semibold mb-2">
-                                        {videoTitle || file?.name}
-                                    </h2> */}
-                                    <div className="mb-3">
-                                        <label className="mb-1 block text-sm text-slate-300">Video title</label>
-                                        <input
-                                            type="text"
-                                            value={videoTitle}
-                                            onChange={(e) => setVideoTitle(e.target.value)}
-                                            placeholder="ตั้งชื่อวิดีโอก่อนส่งออก"
-                                            className="w-full md:max-w-md rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
-                                        />
-                                    </div>
-                                    {file && (
-                                        <p className="text-slate-400 text-sm">
-                                            ขนาดไฟล์: {(file.size / (1024 * 1024)).toFixed(2)} MB
-                                        </p>
-                                    )}
+                            {/* Status Strip */}
+                            <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-900/50 border border-slate-700/30">
+                                <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                                <p className="text-xs text-slate-400 ">ไฟล์วิดีโอ mp4, webm, ogg, mov</p>
+                                <span className="ml-auto text-xs text-slate-500 font-mono">
+                                    {file ? (file.size / (1024 * 1024)).toFixed(2) + " MB" : "—"}
+                                </span>
+                            </div>
+
+                            {/* Title and Confirm */}
+                            <div className="rounded-xl border border-slate-700/50 bg-slate-900/30 p-5 space-y-4">
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-slate-300">Video title</label>
+                                    <input
+                                        type="text"
+                                        value={videoTitle}
+                                        onChange={(e) => setVideoTitle(e.target.value)}
+                                        placeholder="ตั้งชื่อวิดีโอก่อนส่งออก"
+                                        className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2.5 text-white placeholder:text-slate-500 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 outline-none transition"
+                                    />
                                 </div>
-                                <div className="flex flex-wrap flex-col gap-3">
-                                    <div className="text-center">ยืนยันการตรวจสอบ?</div>
-                                    <div className="flex gap-4">
+                                <div className="flex items-end justify-between gap-4">
+                                    <div className="text-sm font-medium text-slate-300"></div>
+                                    <div className="flex gap-2.5">
                                         <button
                                             onClick={handleStartAnalysis}
                                             disabled={isAnalyzing}
-                                            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-md font-semibold shadow transition"
+                                            className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm transition disabled:cursor-not-allowed disabled:bg-gray-600"
                                         >
-                                            <Icon
-                                                icon="mdi:check-circle-outline"
-                                                width="20"
-                                                height="20"
-                                            />
+                                            <Icon icon="mdi:check-circle-outline" width="16" height="16" />
                                             {isAnalyzing ? "กำลังประมวลผล..." : "ตกลง"}
                                         </button>
-
-                                        {/* Cancel/Remove */}
                                         <button
                                             onClick={handleDeleteVideo}
                                             disabled={isAnalyzing}
-                                            className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-md font-semibold shadow transition"
+                                            className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-sm transition disabled:cursor-not-allowed disabled:bg-gray-600"
                                         >
-                                            <Icon
-                                                icon="mdi:close-circle-outline"
-                                                width="20"
-                                                height="20"
-                                            />
+                                            <Icon icon="mdi:close-circle-outline" width="16" height="16" />
                                             ยกเลิก
                                         </button>
                                     </div>
                                 </div>
-
                             </div>
                         </div>
+
+
                     </div>
                 )}
             </div>
