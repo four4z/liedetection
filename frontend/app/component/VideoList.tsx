@@ -68,10 +68,10 @@ export default function VideoList({
     }, [token]);
 
     useEffect(() => {
-        if (!authLoading && !propVideos) {
+        if (!authLoading && !propVideos && token) {
             fetchVideos();
         }
-    }, [propVideos, authLoading, fetchVideos]);
+    }, [token, authLoading, propVideos]);
 
     useEffect(() => {
         if (!propVideos) {

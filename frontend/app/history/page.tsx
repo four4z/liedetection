@@ -95,10 +95,10 @@ export default function HistoryPage() {
     }, [token, mapLogsToVideos]);
 
     useEffect(() => {
-        if (!authLoading) {
+        if (!authLoading && token) {
             loadHistory(0, false);
         }
-    }, [authLoading, loadHistory]);
+    }, [authLoading, token]);
 
     const handleLoadMore = async () => {
         if (!token || isLoadingMore || !hasMore) {
