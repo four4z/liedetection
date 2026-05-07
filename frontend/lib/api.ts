@@ -5,6 +5,15 @@ export interface ApiTokenResponse {
     token_type: string;
 }
 
+export interface ApiMessageResponse {
+    message: string;
+}
+
+export interface ApiPasswordResetVerifyResponse {
+    message: string;
+    reset_token: string;
+}
+
 export interface ApiUser {
     id: string;
     username: string;
@@ -217,6 +226,28 @@ export const authApi = {
         apiRequest<ApiTokenResponse>("/api/auth/register", {
             method: "POST",
             body: { email, username, password },
+        }),
+
+    requestPasswordReset: (email: string) =>
+        apiRequest<ApiMessageResponse>("/api/auth/forgotpassword", {
+            method: "POST",
+            body: { email },
+        }),
+
+    verifyPasswordResetOtp: (email: string, otp: string) =>
+        apiRequest<ApiPasswordResetVerifyResponse>("/api/auth/verifyotp", {
+            method: "POST",
+            body: { email, otp },
+        }),
+
+    resetPassword: (resetToken: string, newPassword: string, confirmPassword: string) =>
+        apiRequest<ApiMessageResponse>("/api/auth/resetpassword", {
+            method: "POST",
+            body: {
+                reset_token: resetToken,
+                new_password: newPassword,
+                confirm_password: confirmPassword,
+            },
         }),
 
     me: (token: string) =>

@@ -219,6 +219,12 @@ function LoginPage() {
                             />
                         </div>
 
+                        <div className="flex justify-end">
+                            <Link href="/forgotpassword" className="text-xs text-blue-400 hover:underline">
+                                Forgot password?
+                            </Link>
+                        </div>
+
                         <button
                             onClick={handleLogin}
                             disabled={isLoading}

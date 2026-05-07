@@ -2,14 +2,20 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import datetime, timedelta
 from typing import Optional
+from email.message import EmailMessage
+import smtplib
 import os
+import secrets
 import httpx
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from bson import ObjectId
 
 from app.models.schemas import (
-    UserCreate, UserLogin, UserResponse, GoogleAuth, Token, TokenData
+    UserCreate, UserLogin, UserResponse, GoogleAuth,
+    PasswordResetRequest, PasswordResetVerify, PasswordResetVerifyResponse,
+    PasswordResetConfirm, MessageResponse,
+    Token, TokenData
 )
 from app.database.connection import get_users_collection
 
@@ -21,6 +27,14 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+PASSWORD_RESET_OTP_EXPIRE_MINUTES = int(os.getenv("PASSWORD_RESET_OTP_EXPIRE_MINUTES", "10"))
+PASSWORD_RESET_TOKEN_EXPIRE_MINUTES = int(os.getenv("PASSWORD_RESET_TOKEN_EXPIRE_MINUTES", "15"))
+SMTP_HOST = os.getenv("SMTP_HOST")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER = os.getenv("SMTP_USER")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER or "no-reply@liedetection.local")
+SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").lower() in {"1", "true", "yes"}
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -36,6 +50,64 @@ def create_access_token(data: dict) -> str:
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def create_password_reset_token(data: dict) -> str:
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=PASSWORD_RESET_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire, "purpose": "password_reset"})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def decode_password_reset_token(token: str) -> dict:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError as exc:
+        raise HTTPException(status_code=401, detail="Invalid or expired reset token") from exc
+
+    if payload.get("purpose") != "password_reset":
+        raise HTTPException(status_code=401, detail="Invalid or expired reset token")
+
+    user_id = payload.get("user_id")
+    email = payload.get("email")
+    if not user_id or not email:
+        raise HTTPException(status_code=401, detail="Invalid or expired reset token")
+
+    return payload
+
+
+def generate_password_reset_otp() -> str:
+    return f"{secrets.randbelow(1000000):06d}"
+
+
+def send_password_reset_email(email: str, otp: str) -> None:
+    subject = "Your password reset code"
+    body = (
+        "You requested a password reset for your Lie Detection account.\n\n"
+        f"Your OTP is: {otp}\n\n"
+        f"This code expires in {PASSWORD_RESET_OTP_EXPIRE_MINUTES} minutes.\n"
+        "If you did not request this, you can ignore this email."
+    )
+
+    if not SMTP_HOST:
+        print(f"[PASSWORD RESET OTP] {email}: {otp}")
+        return
+
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = SMTP_FROM
+    message["To"] = email
+    message.set_content(body)
+
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as server:
+            if SMTP_USE_TLS:
+                server.starttls()
+            if SMTP_USER and SMTP_PASSWORD:
+                server.login(SMTP_USER, SMTP_PASSWORD)
+            server.send_message(message)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="Failed to send password reset email") from exc
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
@@ -202,6 +274,113 @@ async def google_auth(auth_data: GoogleAuth):
     })
     
     return Token(access_token=access_token)
+
+
+@router.post("/forgotpassword", response_model=MessageResponse)
+async def forgot_password(payload: PasswordResetRequest):
+    """Send a password reset OTP to the user's email"""
+    users = get_users_collection()
+    user = await users.find_one({"email": payload.email})
+
+    if not user or user.get("authProvider") != "local" or not user.get("passwordHash"):
+        return MessageResponse(message="If the email exists, an OTP has been sent")
+
+    otp = generate_password_reset_otp()
+    otp_hash = get_password_hash(otp)
+    expires_at = datetime.utcnow() + timedelta(minutes=PASSWORD_RESET_OTP_EXPIRE_MINUTES)
+
+    await users.update_one(
+        {"_id": user["_id"]},
+        {
+            "$set": {
+                "passwordResetOtpHash": otp_hash,
+                "passwordResetOtpExpiresAt": expires_at,
+                "passwordResetOtpIssuedAt": datetime.utcnow(),
+            }
+        }
+    )
+
+    send_password_reset_email(user["email"], otp)
+    return MessageResponse(message="If the email exists, an OTP has been sent")
+
+
+@router.post("/verifyotp", response_model=PasswordResetVerifyResponse)
+async def verify_password_reset_otp(payload: PasswordResetVerify):
+    """Verify the reset OTP and return a short-lived reset token"""
+    users = get_users_collection()
+    user = await users.find_one({"email": payload.email})
+
+    if not user or user.get("authProvider") != "local":
+        raise HTTPException(status_code=400, detail="Invalid email or OTP")
+
+    otp_hash = user.get("passwordResetOtpHash")
+    expires_at = user.get("passwordResetOtpExpiresAt")
+
+    if not otp_hash or not expires_at:
+        raise HTTPException(status_code=400, detail="OTP has expired or was not requested")
+
+    if expires_at < datetime.utcnow():
+        await users.update_one(
+            {"_id": user["_id"]},
+            {
+                "$unset": {
+                    "passwordResetOtpHash": "",
+                    "passwordResetOtpExpiresAt": "",
+                    "passwordResetOtpIssuedAt": "",
+                }
+            }
+        )
+        raise HTTPException(status_code=400, detail="OTP has expired or was not requested")
+
+    if not verify_password(payload.otp, otp_hash):
+        raise HTTPException(status_code=400, detail="Invalid email or OTP")
+
+    reset_token = create_password_reset_token({
+        "user_id": str(user["_id"]),
+        "email": user["email"],
+    })
+
+    await users.update_one(
+        {"_id": user["_id"]},
+        {
+            "$unset": {
+                "passwordResetOtpHash": "",
+                "passwordResetOtpExpiresAt": "",
+                "passwordResetOtpIssuedAt": "",
+            }
+        }
+    )
+
+    return PasswordResetVerifyResponse(
+        message="OTP verified successfully",
+        reset_token=reset_token,
+    )
+
+
+@router.post("/resetpassword", response_model=MessageResponse)
+async def reset_password(payload: PasswordResetConfirm):
+    """Update the user's password after OTP verification"""
+    if payload.new_password != payload.confirm_password:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
+
+    reset_payload = decode_password_reset_token(payload.reset_token)
+    users = get_users_collection()
+
+    user = await users.find_one({"_id": ObjectId(reset_payload["user_id"]), "email": reset_payload["email"]})
+    if not user or user.get("authProvider") != "local" or not user.get("passwordHash"):
+        raise HTTPException(status_code=404, detail="User not found")
+
+    await users.update_one(
+        {"_id": user["_id"]},
+        {
+            "$set": {
+                "passwordHash": get_password_hash(payload.new_password),
+                "lastLogin": datetime.utcnow(),
+            }
+        }
+    )
+
+    return MessageResponse(message="Password reset successfully")
 
 
 @router.get("/me", response_model=UserResponse)
