@@ -238,7 +238,7 @@ async def logout(current_user: dict = Depends(get_current_user)):
     return {"message": "Logged out successfully"}
 
 
-@router.post("/forgotpassword")
+@router.post("/forgetpassword")
 async def forgot_password(email: str):
     """Send OTP to email for password reset"""
     users = get_users_collection()
