@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/lib/auth";
 import { ApiHistoryLog, ApiVideo, historyApi, videosApi } from "@/lib/api";
-import VideoList from "../component/VideoList";
+import VideoList from "../../component/VideoList";
 
 const PAGE_SIZE = 20;
 

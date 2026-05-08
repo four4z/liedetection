@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
-import TimewarpTimeline from "../../component/TimewarpTimeline";
+import TimewarpTimeline from "../../../component/TimewarpTimeline";
 import {
     ApiVideo,
     TimeWarpPoint,
