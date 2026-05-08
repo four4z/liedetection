@@ -1,232 +1,354 @@
 """
-Lie Detection Analyzer using MediaPipe Pose
+analyzer.py — Async background task for lie-detection video analysis.
 
-This module analyzes video frames for body language patterns
-that may indicate deception based on pose estimation.
+Called by `backend/app/api/videos.py` via BackgroundTasks:
+    background_tasks.add_task(analyze_video, video_id)
 
-Note: This is for research/entertainment purposes only.
-Lie detection through body language is not scientifically reliable.
+Pipeline:
+  1. Load video document from MongoDB.
+  2. Download the video from `video_url`.
+  3. Compute video duration (HH:MM:SS).
+  4. Extract a thumbnail frame and upload it to AWS S3 → thumbnail_url.
+  5. Run Silero-VAD segmentation → OpenPose → FaceNet → LSTM inference.
+  6. Build new-format result JSON (no face_image_b64, no raw_timestamp).
+  7. Persist result back to the videos collection and set analysis_status.
 """
 
-import cv2
-import numpy as np
-import mediapipe as mp
-from datetime import datetime
-from bson import ObjectId
-import io
-import tempfile
 import os
+import math
+import numpy as np
+import boto3
+import requests as _requests
+import moviepy.editor as mp
+from datetime import datetime, timezone
+from pathlib import Path
+from bson import ObjectId
+from dotenv import load_dotenv
 
-from app.database.connection import get_videos_collection, get_gridfs
+# ---- Load AWS credentials from database/.env ----
+_env_path = Path(__file__).parent.parent / "database" / ".env"
+load_dotenv(dotenv_path=_env_path)
+
+AWS_ACCESS_KEY        = os.getenv("AWS_ACCESS_KEY")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_BUCKET_NAME       = os.getenv("AWS_BUCKET_NAME")
+AWS_BUCKET_REGION     = os.getenv("AWS_BUCKET_REGION", "ap-southeast-2")
+
+# ---- AI pipeline imports ----
+from app.ai.config import TEMP_SUBCLIP, TEMP_ROOT, TEMP_FRAMES
+from app.ai.utils.file_utils import setup_temp_dirs, cleanup_temp_dirs, final_cleanup
+from app.ai.utils.audio_utils import get_audio_timestamps
+from app.ai.utils.video_utils import (
+    create_subclip, extract_and_crop_roi, download_video,
+    reset_identity_bank, advance_segment, clear_gpu_cache,
+)
+from app.ai.utils.openpose_utils import run_openpose
+from app.ai.inference.predictor import load_model_and_config, infer_segment
+
+# ---- Database ----
+from app.database.connection import get_videos_collection
+
+# ---- Lazy-loaded model globals (shared with api.py if loaded first) ----
+_global_model  = None
+_global_config = None
 
 
-# Initialize MediaPipe Pose
-mp_pose = mp.solutions.pose
-mp_drawing = mp.solutions.drawing_utils
-
-
-class LieDetectionAnalyzer:
-    """Analyze video for potential deception indicators"""
-    
-    def __init__(self):
-        self.pose = mp_pose.Pose(
-            static_image_mode=False,
-            model_complexity=1,
-            smooth_landmarks=True,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5
+def _ensure_model_loaded():
+    """Load model once on first call, then cache globally."""
+    global _global_model, _global_config
+    if _global_model is None or _global_config is None:
+        print("[analyzer] Lazy-loading PyTorch models into memory…")
+        _global_model, _global_config = load_model_and_config(
+            manual_seq_len=None, manual_threshold=None
         )
-        
-        # Movement thresholds
-        self.fidget_threshold = 0.02
-        self.posture_change_threshold = 0.05
-    
-    def analyze_frame(self, frame) -> dict:
-        """Analyze a single frame for pose landmarks"""
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = self.pose.process(rgb_frame)
-        
-        if not results.pose_landmarks:
-            return None
-        
-        landmarks = results.pose_landmarks.landmark
-        
-        # Extract key points
-        return {
-            "nose": (landmarks[mp_pose.PoseLandmark.NOSE].x, landmarks[mp_pose.PoseLandmark.NOSE].y),
-            "left_shoulder": (landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER].x, landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER].y),
-            "right_shoulder": (landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER].x, landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER].y),
-            "left_wrist": (landmarks[mp_pose.PoseLandmark.LEFT_WRIST].x, landmarks[mp_pose.PoseLandmark.LEFT_WRIST].y),
-            "right_wrist": (landmarks[mp_pose.PoseLandmark.RIGHT_WRIST].x, landmarks[mp_pose.PoseLandmark.RIGHT_WRIST].y),
-            "left_hip": (landmarks[mp_pose.PoseLandmark.LEFT_HIP].x, landmarks[mp_pose.PoseLandmark.LEFT_HIP].y),
-            "right_hip": (landmarks[mp_pose.PoseLandmark.RIGHT_HIP].x, landmarks[mp_pose.PoseLandmark.RIGHT_HIP].y),
-        }
-    
-    def calculate_movement(self, prev_landmarks: dict, curr_landmarks: dict) -> float:
-        """Calculate total movement between frames"""
-        if not prev_landmarks or not curr_landmarks:
-            return 0.0
-        
-        total_movement = 0.0
-        for key in prev_landmarks:
-            if key in curr_landmarks:
-                prev = prev_landmarks[key]
-                curr = curr_landmarks[key]
-                movement = np.sqrt((curr[0] - prev[0])**2 + (curr[1] - prev[1])**2)
-                total_movement += movement
-        
-        return total_movement
-    
-    def calculate_hand_to_face_distance(self, landmarks: dict) -> float:
-        """Calculate distance between hands and face (touching face indicator)"""
-        if not landmarks:
-            return 1.0  # Max distance
-        
-        nose = np.array(landmarks["nose"])
-        left_wrist = np.array(landmarks["left_wrist"])
-        right_wrist = np.array(landmarks["right_wrist"])
-        
-        left_dist = np.linalg.norm(nose - left_wrist)
-        right_dist = np.linalg.norm(nose - right_wrist)
-        
-        return min(left_dist, right_dist)
-    
-    def analyze_video_file(self, video_path: str) -> dict:
-        """Analyze entire video file"""
-        cap = cv2.VideoCapture(video_path)
-        
-        if not cap.isOpened():
-            return {"error": "Could not open video file"}
-        
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        duration = total_frames / fps if fps > 0 else 0
-        
-        # Sample every Nth frame
-        sample_rate = max(1, int(fps / 5))  # 5 samples per second
-        
-        prev_landmarks = None
-        movements = []
-        hand_face_distances = []
-        posture_changes = []
-        
-        frame_count = 0
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            
-            if frame_count % sample_rate == 0:
-                landmarks = self.analyze_frame(frame)
-                
-                if landmarks:
-                    # Calculate movement
-                    movement = self.calculate_movement(prev_landmarks, landmarks)
-                    movements.append(movement)
-                    
-                    # Calculate hand-to-face distance
-                    h2f_dist = self.calculate_hand_to_face_distance(landmarks)
-                    hand_face_distances.append(h2f_dist)
-                    
-                    # Track posture changes (shoulder position)
-                    if prev_landmarks:
-                        shoulder_diff = abs(
-                            landmarks["left_shoulder"][1] - prev_landmarks["left_shoulder"][1]
-                        ) + abs(
-                            landmarks["right_shoulder"][1] - prev_landmarks["right_shoulder"][1]
-                        )
-                        posture_changes.append(shoulder_diff)
-                    
-                    prev_landmarks = landmarks
-            
-            frame_count += 1
-        
-        cap.release()
-        
-        # Calculate indicators
-        avg_movement = np.mean(movements) if movements else 0
-        high_movement_ratio = sum(1 for m in movements if m > self.fidget_threshold) / len(movements) if movements else 0
-        
-        avg_h2f_distance = np.mean(hand_face_distances) if hand_face_distances else 1
-        face_touch_ratio = sum(1 for d in hand_face_distances if d < 0.15) / len(hand_face_distances) if hand_face_distances else 0
-        
-        avg_posture_change = np.mean(posture_changes) if posture_changes else 0
-        
-        # Calculate confidence score (0-100)
-        # Higher movement, more face touching, more posture changes = higher lie probability
-        movement_score = min(high_movement_ratio * 100, 40)  # Max 40 points
-        face_touch_score = face_touch_ratio * 30  # Max 30 points
-        posture_score = min(avg_posture_change * 200, 30)  # Max 30 points
-        
-        confidence_score = movement_score + face_touch_score + posture_score
-        confidence_score = min(max(confidence_score, 0), 100)
-        
-        # Determine if lie detected (threshold: 50%)
-        is_lie_detected = confidence_score >= 50
-        
-        return {
-            "isLieDetected": is_lie_detected,
-            "confidenceScore": round(confidence_score, 2),
-            "duration": duration,
-            "framesAnalyzed": len(movements),
-            "indicators": {
-                "fidgetLevel": round(high_movement_ratio * 100, 2),
-                "faceTouchLevel": round(face_touch_ratio * 100, 2),
-                "postureChangeLevel": round(avg_posture_change * 100, 2)
-            }
-        }
-    
-    def close(self):
-        self.pose.close()
+        print("[analyzer] Models loaded and ready.")
 
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+# Formats supported natively through the pipeline.
+# WebM is handled by downloading first then transcoding to MP4.
+_WEBM_EXTENSIONS = {".webm"}
+
+
+def _seconds_to_hhmmss(total_seconds: float) -> str:
+    """Convert a float number of seconds to 'HH:MM:SS' string."""
+    total_seconds = int(math.floor(total_seconds))
+    h = total_seconds // 3600
+    m = (total_seconds % 3600) // 60
+    s = total_seconds % 60
+    return f"{h:02d}:{m:02d}:{s:02d}"
+
+
+def _format_timestamp_range(start_sec: float, end_sec: float) -> str:
+    """Return a readable segment range like '00:00:05–00:00:10'."""
+    return f"{_seconds_to_hhmmss(start_sec)}–{_seconds_to_hhmmss(end_sec)}"
+
+
+def _format_conf(p: float, thresh: float) -> float:
+    """Display confidence: show distance from whichever side of the threshold we're on."""
+    display_p = p if p > thresh else (1.0 - p)
+    return round(display_p, 4)
+
+
+def _get_video_duration(video_path: str) -> str:
+    """Return video duration as 'HH:MM:SS' using moviepy."""
+    with mp.VideoFileClip(video_path) as clip:
+        return _seconds_to_hhmmss(clip.duration)
+
+
+def _is_webm_url(url: str) -> bool:
+    """Return True if the URL path ends with .webm (case-insensitive)."""
+    from urllib.parse import urlparse
+    path = urlparse(url).path
+    return Path(path).suffix.lower() in _WEBM_EXTENSIONS
+
+
+def _download_video_raw(url: str, dest_path: str) -> None:
+    """
+    Stream-download a video URL to *dest_path*.
+    Preserves whatever container the server sends — no extension coercion.
+    """
+    print(f"[analyzer] Downloading video from {url}…")
+    with _requests.get(url, stream=True, timeout=120) as r:
+        r.raise_for_status()
+        with open(dest_path, "wb") as f:
+            for chunk in r.iter_content(chunk_size=65536):
+                f.write(chunk)
+
+
+def _transcode_to_mp4(src_path: str, dst_path: str) -> None:
+    """
+    Re-encode *src_path* (any moviepy-readable container, e.g. .webm)
+    to a plain H.264/AAC .mp4 at *dst_path*.
+    The source file is removed after a successful transcode.
+    """
+    print(f"[analyzer] Transcoding {Path(src_path).suffix} → .mp4 …")
+    with mp.VideoFileClip(src_path) as clip:
+        clip.write_videofile(
+            dst_path,
+            codec="libx264",
+            audio_codec="aac",
+            logger=None,
+        )
+    os.remove(src_path)
+    print(f"[analyzer] Transcode complete → {dst_path}")
+
+
+def _extract_thumbnail_frame(video_path: str) -> bytes | None:
+    """
+    Extract a single frame from the middle of the video and return it as
+    JPEG bytes.  Returns None if extraction fails.
+    """
+    try:
+        with mp.VideoFileClip(video_path) as clip:
+            mid_time = clip.duration / 2.0
+            frame = clip.get_frame(mid_time)   # numpy (H, W, 3) RGB uint8
+        import cv2
+        bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        success, buf = cv2.imencode(".jpg", bgr, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        return buf.tobytes() if success else None
+    except Exception as e:
+        print(f"[analyzer] Thumbnail extraction failed: {e}")
+        return None
+
+
+def _upload_thumbnail_to_s3(jpeg_bytes: bytes, object_key: str) -> str | None:
+    """
+    Upload JPEG bytes to S3 and return the public HTTPS URL.
+    Returns None on failure.
+    """
+    try:
+        s3 = boto3.client(
+            "s3",
+            region_name=AWS_BUCKET_REGION,
+            aws_access_key_id=AWS_ACCESS_KEY,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        )
+        s3.put_object(
+            Bucket=AWS_BUCKET_NAME,
+            Key=object_key,
+            Body=jpeg_bytes,
+            ContentType="image/jpeg",
+        )
+        url = f"https://{AWS_BUCKET_NAME}.s3.{AWS_BUCKET_REGION}.amazonaws.com/{object_key}"
+        print(f"[analyzer] Thumbnail uploaded → {url}")
+        return url
+    except Exception as e:
+        print(f"[analyzer] S3 upload failed: {e}")
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Main pipeline
+# ---------------------------------------------------------------------------
 
 async def analyze_video(video_id: str):
-    """Background task to analyze a video"""
+    """
+    Full lie-detection analysis pipeline for a single video.
+
+    Intended to be called as a FastAPI BackgroundTask:
+        background_tasks.add_task(analyze_video, video_id)
+
+    On completion the videos MongoDB document is updated with:
+      - segments          (new format, no face_image_b64)
+      - summary
+      - thumbnail_url     (S3 URL)
+      - video_duration    (HH:MM:SS)
+      - analysis_status   "completed" | "failed"
+    """
     videos = get_videos_collection()
-    gridfs = get_gridfs()
-    
+
+    # ------------------------------------------------------------------
+    # 1. Fetch video document
+    # ------------------------------------------------------------------
     try:
-        # Get video document
-        video = await videos.find_one({"_id": ObjectId(video_id)})
-        if not video:
-            return
-        
-        # Download video from GridFS to temp file
-        grid_out = await gridfs.open_download_stream(ObjectId(video["filePath"]))
-        video_data = await grid_out.read()
-        
-        # Save to temp file
-        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as temp_file:
-            temp_file.write(video_data)
-            temp_path = temp_file.name
-        
-        # Analyze video
-        analyzer = LieDetectionAnalyzer()
-        result = analyzer.analyze_video_file(temp_path)
-        analyzer.close()
-        
-        # Clean up temp file
-        os.unlink(temp_path)
-        
-        # Update video document with results
-        await videos.update_one(
-            {"_id": ObjectId(video_id)},
-            {"$set": {
-                "durationSeconds": result.get("duration"),
-                "analysisResult_isLieDetected": result["isLieDetected"],
-                "analysisResult_confidenceScore": result["confidenceScore"],
-                "analysisResult_status": "completed",
-                "analysisResult_analyzedAt": datetime.utcnow()
-            }}
-        )
-        
+        video_doc = await videos.find_one({"_id": ObjectId(video_id)})
     except Exception as e:
-        # Mark as failed
+        print(f"[analyzer] Could not fetch video {video_id}: {e}")
+        return
+
+    if not video_doc:
+        print(f"[analyzer] Video {video_id} not found in database.")
+        return
+
+    video_url   = video_doc.get("video_url", "")
+    video_name  = video_doc.get("video", video_url.rsplit("/", 1)[-1])
+    user_id     = video_doc.get("user_id")
+    uploaded_at = video_doc.get("uploaded_at", datetime.now(timezone.utc))
+
+    # Always process with .mp4 extension so OpenPose / FFmpeg are happy.
+    temp_video_path = os.path.join(TEMP_ROOT, f"target_{video_id}.mp4")
+
+    try:
+        _ensure_model_loaded()
+        setup_temp_dirs()
+        reset_identity_bank()
+
+        # ------------------------------------------------------------------
+        # 2. Download video (with WebM → MP4 transcoding when needed)
+        # ------------------------------------------------------------------
+        if not video_url:
+            raise ValueError("video_url is empty — cannot download video.")
+
+        if _is_webm_url(video_url):
+            # Download to a .webm temp file, then transcode to .mp4
+            temp_webm_path = os.path.join(TEMP_ROOT, f"target_{video_id}.webm")
+            _download_video_raw(video_url, temp_webm_path)
+            _transcode_to_mp4(temp_webm_path, temp_video_path)
+        else:
+            download_video(video_url, temp_video_path)
+
+        # ------------------------------------------------------------------
+        # 3. Video duration
+        # ------------------------------------------------------------------
+        video_duration = _get_video_duration(temp_video_path)
+        print(f"[analyzer] Video duration: {video_duration}")
+
+        # ------------------------------------------------------------------
+        # 4. Thumbnail → S3
+        # ------------------------------------------------------------------
+        thumbnail_url = video_doc.get("thumbnail_url")   # keep existing if present
+        jpeg_bytes = _extract_thumbnail_frame(temp_video_path)
+        if jpeg_bytes:
+            object_key = f"thumbnails/{video_id}.jpg"
+            uploaded = _upload_thumbnail_to_s3(jpeg_bytes, object_key)
+            if uploaded:
+                thumbnail_url = uploaded
+
+        # ------------------------------------------------------------------
+        # 5. Segment detection & inference
+        # ------------------------------------------------------------------
+        segments_raw   = get_audio_timestamps(temp_video_path)
+        threshold      = _global_config["SIGMOID_THRESHOLD"]
+        segment_list   = []
+        strongest_probs = []
+
+        for start_sec, end_sec in segments_raw:
+            advance_segment()
+            cleanup_temp_dirs()
+
+            create_subclip(temp_video_path, TEMP_SUBCLIP, start_sec, end_sec)
+            run_openpose(TEMP_SUBCLIP)
+            valid_frames = extract_and_crop_roi(TEMP_SUBCLIP)
+            clear_gpu_cache()
+
+            if valid_frames == 0:
+                continue
+
+            result = infer_segment(_global_model, _global_config)
+            if result is None:
+                continue
+
+            strongest_probs.append(result["strongest_confidence_score"])
+
+            segment_data = {
+                "timestamp":                        _format_timestamp_range(start_sec, end_sec),
+                "face_confidence_score":            _format_conf(result["face_confidence_score"], threshold),
+                "face_verdict":                     result["face_verdict"],
+                "arms_confidence_score":            _format_conf(result["arms_confidence_score"], threshold),
+                "arms_verdict":                     result["arms_verdict"],
+                "average_confidence_score_segment": _format_conf(result["average_confidence_score_segment"], threshold),
+                "verdict":                          result["verdict"],
+                "parts_indicate":                   result["parts_indicate"],
+                "average_based_verdict":            result["average_based_verdict"],
+            }
+            segment_list.append(segment_data)
+
+        # ------------------------------------------------------------------
+        # 6. Build summary
+        # ------------------------------------------------------------------
+        if strongest_probs:
+            avg_prob       = float(np.mean(strongest_probs))
+            final_verdict  = "LIE" if avg_prob >= threshold else "TRUTH"
+            display_avg    = avg_prob if final_verdict == "LIE" else (1.0 - avg_prob)
+            summary = {
+                "average_confidence_score": round(display_avg, 4),
+                "final_verdict":            final_verdict,
+                "total_segments_analyzed":  len(strongest_probs),
+            }
+        else:
+            summary = {
+                "average_confidence_score": 0.0,
+                "final_verdict":            "TRUTH",
+                "total_segments_analyzed":  0,
+            }
+
+        # ------------------------------------------------------------------
+        # 7. Persist to MongoDB
+        # ------------------------------------------------------------------
+        update_payload = {
+            "segments":         segment_list,
+            "summary":          summary,
+            "thumbnail_url":    thumbnail_url,
+            "video_duration":   video_duration,
+            "analysis_status":  "completed",
+        }
+
         await videos.update_one(
             {"_id": ObjectId(video_id)},
-            {"$set": {
-                "analysisResult_status": "failed",
-                "analysisResult_analyzedAt": datetime.utcnow()
-            }}
+            {"$set": update_payload}
         )
-        print(f"Analysis failed for video {video_id}: {str(e)}")
+        print(f"[analyzer] Analysis complete for video {video_id}. "
+              f"Verdict: {summary.get('final_verdict')} | "
+              f"Segments: {summary.get('total_segments_analyzed')}")
+
+    except Exception as e:
+        print(f"[analyzer] Pipeline error for video {video_id}: {e}")
+        try:
+            await videos.update_one(
+                {"_id": ObjectId(video_id)},
+                {"$set": {"analysis_status": "failed"}}
+            )
+        except Exception:
+            pass
+
+    finally:
+        final_cleanup()
+        if os.path.exists(temp_video_path):
+            try:
+                os.remove(temp_video_path)
+            except Exception:
+                pass
