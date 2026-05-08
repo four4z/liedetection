@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
 import { usePathname } from "next/navigation";
@@ -15,7 +16,7 @@ export default function Sidebar({ children }: SidebarProps) {
     const [openPopup, setOpenPopup] = useState(false);
     const pathname = usePathname();
     const { user, logout, isLoading } = useAuth();
-
+    const router = useRouter();
     const togglePopup = () => {
         setOpenPopup((prev) => !prev);
     };
@@ -35,7 +36,7 @@ export default function Sidebar({ children }: SidebarProps) {
     const handleLogout = () => {
         logout();
         togglePopup();
-        // router.push("/Login");
+        router.push("/");
     };
 
     const menuItems = [
@@ -123,7 +124,7 @@ export default function Sidebar({ children }: SidebarProps) {
                             />
                             {isOpen && (
                                 <span className="whitespace-nowrap text-sm font-medium">
-                                    {isLoading ? "Loading..." : user?.email || "no token"}
+                                    {isLoading ? "Loading..." : user?.username || "no token"}
                                 </span>
                             )}
                         </div>
