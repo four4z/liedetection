@@ -16,6 +16,10 @@ export default function Sidebar({ children }: SidebarProps) {
     const pathname = usePathname();
     const { user, logout, isLoading } = useAuth();
 
+    if (pathname === "/") {
+        return <>{children}</>;
+    }
+
     const togglePopup = () => {
         setOpenPopup((prev) => !prev);
     };
