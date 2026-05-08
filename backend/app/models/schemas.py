@@ -39,6 +39,30 @@ class GoogleAuth(BaseModel):
     credential: str  # Google ID token
 
 
+class PasswordResetRequest(BaseModel):
+    """Request a password reset OTP"""
+    email: EmailStr
+
+
+class PasswordResetVerify(BaseModel):
+    """Verify a password reset OTP"""
+    email: EmailStr
+    otp: str = Field(..., min_length=6, max_length=6)
+
+
+class PasswordResetVerifyResponse(BaseModel):
+    """Response returned after OTP verification"""
+    message: str
+    reset_token: str
+
+
+class PasswordResetConfirm(BaseModel):
+    """Complete password reset using a short-lived token"""
+    reset_token: str
+    new_password: str = Field(..., min_length=6)
+    confirm_password: str = Field(..., min_length=6)
+
+
 class UserResponse(BaseModel):
     """User data returned to client"""
     id: str
@@ -59,6 +83,9 @@ class UserInDB(BaseModel):
     avatarUrl: Optional[str] = None
     createdAt: datetime
     lastLogin: Optional[datetime] = None
+    passwordResetOtpHash: Optional[str] = None
+    passwordResetOtpExpiresAt: Optional[datetime] = None
+    passwordResetOtpIssuedAt: Optional[datetime] = None
 
 
 # ============ VIDEO MODELS ============
@@ -138,3 +165,8 @@ class TokenData(BaseModel):
     """Data encoded in JWT"""
     user_id: str
     email: str
+
+
+class MessageResponse(BaseModel):
+    """Generic message response"""
+    message: str

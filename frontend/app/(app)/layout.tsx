@@ -1,6 +1,6 @@
-import Sidebar from "../../component/Sidebar";
+import Sidebar from "../component/Sidebar";
 
-export default function VideoDetailLayout({
+export default function AppLayout({
     children,
 }: {
     children: React.ReactNode;
