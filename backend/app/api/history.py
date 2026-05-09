@@ -69,32 +69,3 @@ async def clear_history(current_user: dict = Depends(get_current_user)):
     result = await history.delete_many({"userId": str(current_user["_id"])})
     
     return {"message": f"Deleted {result.deleted_count} history entries"}
-
-
-@router.get("/debug/{video_id}")
-async def debug_video_lookup(
-    video_id: str,
-    current_user: dict = Depends(get_current_user),
-):
-    """Debug: check what fields the videos collection returns for a given video_id."""
-    from bson import ObjectId
-
-    videos_col = get_videos_collection()
-
-    if not ObjectId.is_valid(video_id):
-        return {"error": f"'{video_id}' is not a valid ObjectId"}
-
-    video = await videos_col.find_one({"_id": ObjectId(video_id)})
-
-    if video is None:
-        return {"found": False, "video_id": video_id}
-
-    return {
-        "found": True,
-        "video_id": video_id,
-        "video": video.get("video"),
-        "video_url": video.get("video_url"),
-        "thumbnail_url": video.get("thumbnail_url"),
-        "analysis_status": video.get("analysis_status"),
-        "all_keys": list(video.keys()),
-    }

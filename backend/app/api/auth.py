@@ -28,17 +28,17 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 # OTP settings
 OTP_EXPIRE_MINUTES = 10
 
-# Mail settings
-mail_conf = ConnectionConfig(
-    MAIL_USERNAME=os.getenv("MAIL_USERNAME", ""),
-    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD", ""),
-    MAIL_FROM=os.getenv("MAIL_FROM", ""),
-    MAIL_PORT=int(os.getenv("MAIL_PORT", 587)),
-    MAIL_SERVER=os.getenv("MAIL_SERVER", "smtp.gmail.com"),
-    MAIL_STARTTLS=True,
-    MAIL_SSL_TLS=False,
-    USE_CREDENTIALS=True,
-)
+def get_mail_config() -> ConnectionConfig:
+    return ConnectionConfig(
+        MAIL_USERNAME=os.getenv("MAIL_USERNAME", ""),
+        MAIL_PASSWORD=os.getenv("MAIL_PASSWORD", ""),
+        MAIL_FROM=os.getenv("MAIL_FROM"),
+        MAIL_PORT=int(os.getenv("MAIL_PORT", 587)),
+        MAIL_SERVER=os.getenv("MAIL_SERVER", "smtp.gmail.com"),
+        MAIL_STARTTLS=True,
+        MAIL_SSL_TLS=False,
+        USE_CREDENTIALS=True,
+    )
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -239,7 +239,7 @@ async def logout(current_user: dict = Depends(get_current_user)):
 
 
 @router.post("/forgetpassword")
-async def forgot_password(email: str):
+async def forget_password(email: str):
     """Send OTP to email for password reset"""
     users = get_users_collection()
     user = await users.find_one({"email": email})
@@ -268,7 +268,7 @@ async def forgot_password(email: str):
         body=f"<h2>Your OTP is: <strong>{otp}</strong></h2><p>Expires in {OTP_EXPIRE_MINUTES} minutes.</p>",
         subtype="html"
     )
-    fm = FastMail(mail_conf)
+    fm = FastMail(get_mail_config())
     await fm.send_message(message)
 
     return {"message": "If that email is registered, an OTP has been sent."}

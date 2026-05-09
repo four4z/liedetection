@@ -35,3 +35,4 @@ Thumbs.db
 
 # Uploaded files (if stored locally)
 uploads/
+backend/package-lock.json
