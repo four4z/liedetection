@@ -1,0 +1,11 @@
+{
+    "SEQ_LEN": 50,
+    "BATCH_SIZE": 8,
+    "EPOCHS": 10,
+    "WEIGHT_DECAY": 0.001,
+    "SIGMOID_THRESHOLD": 0.5,
+    "LEARNING_RATE": 0.0001,
+    "MODEL": "ArmsOnly_EarlyFusion",
+    "RANDOM_SEED": 42,
+    "ARM_DIM": 112
+}

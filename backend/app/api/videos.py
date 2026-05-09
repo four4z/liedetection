@@ -10,7 +10,7 @@ from app.models.schemas import (
 )
 from app.database.connection import get_videos_collection, get_history_collection
 from app.api.auth import get_current_user, get_optional_user
-from app.ai.analyzer import analyze_video
+from app.ai.analyzer import analyze_video  # async background pipeline
 
 router = APIRouter()
 
