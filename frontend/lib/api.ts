@@ -1,4 +1,12 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/+$/, "");
+
+export const API_BASE_URL = normalizeBaseUrl(
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+);
+
+const isNgrokUrl = API_BASE_URL.includes("ngrok-free.dev") || API_BASE_URL.includes("ngrok.io");
+
+const buildApiUrl = (path: string) => `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 
 export interface ApiTokenResponse {
     access_token: string;
@@ -182,17 +190,26 @@ const toErrorMessage = (detail: unknown, fallback: string) => {
 };
 
 const apiRequest = async <T>(path: string, options: RequestOptions = {}): Promise<T> => {
-    const headers: HeadersInit = {
-        "Content-Type": "application/json",
+    const headers: Record<string, string> = {
+        Accept: "application/json",
     };
+
+    if (options.body !== undefined) {
+        headers["Content-Type"] = "application/json";
+    }
 
     if (options.token) {
         headers.Authorization = `Bearer ${options.token}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}${path}`, {
+    if (isNgrokUrl) {
+        headers["ngrok-skip-browser-warning"] = "true";
+    }
+
+    const response = await fetch(buildApiUrl(path), {
         method: options.method || "GET",
         headers,
+        mode: "cors",
         body: options.body ? JSON.stringify(options.body) : undefined,
     });
 

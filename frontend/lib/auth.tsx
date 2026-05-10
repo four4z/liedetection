@@ -11,6 +11,15 @@ interface AuthContextType {
   isLoading: boolean;
 }
 
+const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/+$/, "");
+
+export const API_BASE_URL = normalizeBaseUrl(
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+);
+
+export const buildApiUrl = (path: string) =>
+  `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const canUseStorage = () => typeof window !== "undefined";
