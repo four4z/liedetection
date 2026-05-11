@@ -1,4 +1,5 @@
 import os
+import gc
 import cv2
 import json
 import shutil
@@ -70,7 +71,9 @@ def clear_gpu_cache():
     (or any other CUDA consumer) has maximum VRAM for the next segment.
     Call from api.py immediately after extract_and_crop_roi() returns.
     """
+    gc.collect()
     if torch.cuda.is_available():
+        torch.cuda.synchronize()
         torch.cuda.empty_cache()
 
 

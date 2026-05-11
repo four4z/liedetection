@@ -42,7 +42,7 @@ from app.ai.utils.video_utils import (
     create_subclip, extract_and_crop_roi, download_video,
     reset_identity_bank, advance_segment, clear_gpu_cache,
 )
-from app.ai.utils.openpose_utils import run_openpose
+from app.ai.utils.openpose_utils import run_openpose_async
 from app.ai.inference.predictor import load_model_and_config, infer_segment
 
 # ---- Database ----
@@ -221,6 +221,8 @@ async def analyze_video(video_id: str):
 
     # Always process with .mp4 extension so OpenPose / FFmpeg are happy.
     temp_video_path = os.path.join(TEMP_ROOT, f"target_{video_id}.mp4")
+    # Track extra temp files for cleanup
+    temp_webm_path = None
 
     try:
         _ensure_model_loaded()
@@ -238,6 +240,7 @@ async def analyze_video(video_id: str):
             temp_webm_path = os.path.join(TEMP_ROOT, f"target_{video_id}.webm")
             _download_video_raw(video_url, temp_webm_path)
             _transcode_to_mp4(temp_webm_path, temp_video_path)
+            temp_webm_path = None  # transcode removes it on success
         else:
             download_video(video_url, temp_video_path)
 
@@ -261,7 +264,30 @@ async def analyze_video(video_id: str):
         # ------------------------------------------------------------------
         # 5. Segment detection & inference
         # ------------------------------------------------------------------
-        segments_raw   = get_audio_timestamps(temp_video_path)
+        segments_raw = get_audio_timestamps(temp_video_path)
+
+        # ---- FAIL-FAST: No audio segments → skip processing immediately ----
+        if not segments_raw:
+            print(f"[analyzer] No audio segments detected for video {video_id} "
+                  f"— skipping AI processing.")
+            # Still persist duration/thumbnail, mark as completed with 0 segments
+            update_payload = {
+                "segments":        [],
+                "summary": {
+                    "average_confidence_score": 0.0,
+                    "final_verdict":            "TRUTH",
+                    "total_segments_analyzed":   0,
+                },
+                "thumbnail_url":   thumbnail_url,
+                "video_duration":  video_duration,
+                "analysis_status": "completed",
+            }
+            await videos.update_one(
+                {"_id": ObjectId(video_id)},
+                {"$set": update_payload}
+            )
+            return
+
         threshold      = _global_config["SIGMOID_THRESHOLD"]
         segment_list   = []
         strongest_probs = []
@@ -271,7 +297,7 @@ async def analyze_video(video_id: str):
             cleanup_temp_dirs()
 
             create_subclip(temp_video_path, TEMP_SUBCLIP, start_sec, end_sec)
-            run_openpose(TEMP_SUBCLIP)
+            await run_openpose_async(TEMP_SUBCLIP)
             valid_frames = extract_and_crop_roi(TEMP_SUBCLIP)
             clear_gpu_cache()
 
@@ -346,9 +372,18 @@ async def analyze_video(video_id: str):
             pass
 
     finally:
+        # Release GPU memory before cleaning up files
+        clear_gpu_cache()
         final_cleanup()
+        # Clean up the main temp video file
         if os.path.exists(temp_video_path):
             try:
                 os.remove(temp_video_path)
+            except Exception:
+                pass
+        # Clean up leftover .webm if transcode failed partway
+        if temp_webm_path and os.path.exists(temp_webm_path):
+            try:
+                os.remove(temp_webm_path)
             except Exception:
                 pass

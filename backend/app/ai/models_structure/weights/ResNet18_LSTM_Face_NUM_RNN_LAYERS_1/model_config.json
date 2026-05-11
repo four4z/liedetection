@@ -1,0 +1,14 @@
+{
+    "TRAIN_DATASET": "DOLOS",
+    "MODALITY": "face",
+    "CNN": "resnet18",
+    "HEAD": "lstm",
+    "FREEZE_CNN": false,
+    "SEQ_LEN": 30,
+    "INPUT_DIM": 224,
+    "BATCH_SIZE": 16,
+    "EPOCHS": 15,
+    "LR": 5e-05,
+    "WEIGHT_DECAY": 0.005,
+    "RANDOM_SEED": 42
+}

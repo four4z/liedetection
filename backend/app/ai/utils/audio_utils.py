@@ -17,8 +17,8 @@ def get_audio_timestamps(video_path, max_chunk_duration=60.0):
         with mp.VideoFileClip(video_path) as video:
             video_duration = video.duration
             if video.audio is None:
-                print("No audio track found. Using entire video length.")
-                return [(0.0, video_duration)]
+                print("[audio] No audio track found — skipping processing.")
+                return []
 
             video.audio.write_audiofile(TEMP_AUDIO, logger=None)
 
@@ -58,9 +58,9 @@ def get_audio_timestamps(video_path, max_chunk_duration=60.0):
         if os.path.exists(TEMP_AUDIO):
             os.remove(TEMP_AUDIO)
 
-        print(f"Found {len(final_segments)} speech segments.")
-        return final_segments if final_segments else [(0.0, video_duration)]
+        print(f"[audio] Found {len(final_segments)} speech segments.")
+        return final_segments
 
     except Exception as e:
-        print(f"Audio processing failed: {e}. Defaulting to full video.")
-        return [(0.0, mp.VideoFileClip(video_path).duration)]
+        print(f"[audio] Audio processing failed: {e}. Returning 0 segments.")
+        return []

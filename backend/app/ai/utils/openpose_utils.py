@@ -1,6 +1,10 @@
 import os
+import asyncio
 import subprocess
 from app.ai.config import OPENPOSE_EXE, OPENPOSE_DIR, TEMP_JSONS
+
+# Global semaphore: strictly 1 concurrent OpenPose process at a time (GPU VRAM)
+_openpose_semaphore = asyncio.Semaphore(1)
 
 def run_openpose(subclip_path):
     """Triggers the OpenPose executable via subprocess.
@@ -35,3 +39,14 @@ def run_openpose(subclip_path):
         print(f"OpenPose error: {e}")
     finally:
         os.chdir(original_dir)
+
+
+async def run_openpose_async(subclip_path: str) -> None:
+    """Async wrapper that runs OpenPose in a background thread.
+
+    Uses an asyncio.Semaphore(1) to guarantee that at most one OpenPose
+    process is active globally — preventing GPU VRAM exhaustion.
+    Other FastAPI endpoints remain responsive while waiting.
+    """
+    async with _openpose_semaphore:
+        await asyncio.to_thread(run_openpose, subclip_path)

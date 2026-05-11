@@ -11,7 +11,7 @@ from app.ai.config import TEMP_SUBCLIP, TEMP_ROOT, TEMP_FRAMES
 from app.ai.utils.file_utils import setup_temp_dirs, cleanup_temp_dirs, final_cleanup
 from app.ai.utils.audio_utils import get_audio_timestamps
 from app.ai.utils.video_utils import create_subclip, extract_and_crop_roi, download_video, reset_identity_bank, advance_segment, clear_gpu_cache
-from app.ai.utils.openpose_utils import run_openpose
+from app.ai.utils.openpose_utils import run_openpose_async
 from app.ai.inference.predictor import load_model_and_config, infer_segment
 
 router = APIRouter()
@@ -82,6 +82,17 @@ async def analyze_video(
             "summary": {}
         }
 
+        # ---- FAIL-FAST: No audio segments → skip AI processing ----
+        if not segments:
+            print("[api] No audio segments detected — skipping AI processing.")
+            json_report["summary"] = {
+                "average_confidence_score": 0.0,
+                "final_verdict": "TRUTH",
+                "total_segments_analyzed": 0,
+                "note": "No audio segments detected in video."
+            }
+            return JSONResponse(content=json_report)
+
         segment_strongest_probs = []
         threshold = _global_config['SIGMOID_THRESHOLD']
 
@@ -100,7 +111,7 @@ async def analyze_video(
             cleanup_temp_dirs()
 
             create_subclip(temp_video_path, TEMP_SUBCLIP, start_sec, end_sec)
-            run_openpose(TEMP_SUBCLIP)
+            await run_openpose_async(TEMP_SUBCLIP)
             valid_frames = extract_and_crop_roi(TEMP_SUBCLIP)
             clear_gpu_cache()  # release FaceNet VRAM before next OpenPose run
 
@@ -140,9 +151,11 @@ async def analyze_video(
 
     except Exception as e:
         final_cleanup()
+        clear_gpu_cache()
         raise HTTPException(status_code=500, detail=str(e))
 
     finally:
+        clear_gpu_cache()
         final_cleanup()
         if os.path.exists(temp_video_path):
             try:

@@ -10,60 +10,108 @@ import sys
 # Ensure models_structure can be imported
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models_structure'))
 
-# Import the newly refactored dynamic models
-from app.ai.models_structure.models import DynamicFaceLSTM, DynamicArmsLSTM, ModalityFeatureExtractor, MultimodalPipeline
-from app.ai.config import FACE_MODEL_CONFIG_PATH, FACE_MODEL_WEIGHT_PATH, ARMS_MODEL_WEIGHT_PATH, DEVICE, TEMP_FRAMES
+# Import the new temporal model classes
+from app.ai.models_structure.models import (
+    DeceptionTemporalModel, ArmsTemporalModel, MultimodalPipeline,
+)
+from app.ai.config import (
+    FACE_MODEL_CONFIG_PATH, FACE_MODEL_WEIGHT_PATH,
+    ARMS_MODEL_CONFIG_PATH, ARMS_MODEL_WEIGHT_PATH,
+    DEVICE, TEMP_FRAMES,
+)
+from app.ai.utils.video_utils import clear_gpu_cache
+
+
+def _build_model_from_config(config: dict, weight_path: str):
+    """
+    Instantiate the correct model class based on the JSON config's MODALITY field,
+    mapping CNN and HEAD keys to class constructor arguments.
+
+    Returns the loaded model on DEVICE in eval mode.
+    """
+    modality   = config["MODALITY"]
+    cnn_name   = config.get("CNN", "resnet18")
+    head_type  = config.get("HEAD", "lstm")
+    seq_len    = config.get("SEQ_LEN", 30)
+    freeze_cnn = config.get("FREEZE_CNN", False)
+
+    print(f"[predictor] Building model: MODALITY={modality}, CNN={cnn_name}, "
+          f"HEAD={head_type}, SEQ_LEN={seq_len}")
+
+    if modality == "face":
+        model = DeceptionTemporalModel(
+            cnn_name=cnn_name,
+            head_type=head_type,
+            seq_len=seq_len,
+            freeze_cnn=freeze_cnn,
+            pretrained=True,
+        )
+    elif modality == "arms_early_fusion":
+        model = ArmsTemporalModel(
+            cnn_name=cnn_name,
+            head_type=head_type,
+            seq_len=seq_len,
+            freeze_cnn=freeze_cnn,
+            pretrained=True,
+        )
+    else:
+        raise ValueError(f"[predictor] Unknown MODALITY in config: {modality}")
+
+    # Load weights — use strict=False to tolerate minor key mismatches
+    # from older checkpoint formats
+    state_dict = torch.load(weight_path, map_location=DEVICE)
+    model.load_state_dict(state_dict, strict=False)
+    model.to(DEVICE)
+    model.eval()
+
+    print(f"[predictor] Loaded weights from {weight_path}")
+    return model
 
 
 def load_model_and_config(manual_seq_len=None, manual_threshold=None):
-    """Instantiates the dynamic PyTorch models, allows manual config overrides, and loads weights."""
+    """
+    Read both face and arms JSON configs, instantiate the correct model
+    classes via _build_model_from_config, and wrap them in MultimodalPipeline.
+    """
+    # ---- Face config ----
     with open(FACE_MODEL_CONFIG_PATH, 'r') as f:
-        config = json.load(f)
+        face_config = json.load(f)
 
-    seq_len = manual_seq_len if manual_seq_len is not None else config.get('SEQ_LEN', 20)
-    threshold = manual_threshold if manual_threshold is not None else config.get('SIGMOID_THRESHOLD', 0.5)
+    # ---- Arms config ----
+    with open(ARMS_MODEL_CONFIG_PATH, 'r') as f:
+        arms_config = json.load(f)
 
-    updated_config = {
-        'SEQ_LEN': seq_len,
-        'SIGMOID_THRESHOLD': threshold
+    # Merge into a pipeline-level config dict
+    seq_len   = manual_seq_len if manual_seq_len is not None else face_config.get('SEQ_LEN', 30)
+    threshold = manual_threshold if manual_threshold is not None else face_config.get('SIGMOID_THRESHOLD', 0.5)
+    input_dim = face_config.get('INPUT_DIM', 224)
+
+    pipeline_config = {
+        'SEQ_LEN':            seq_len,
+        'SIGMOID_THRESHOLD':  threshold,
+        'INPUT_DIM':          input_dim,
     }
 
-    print(f"Loaded Config: SEQ_LEN={seq_len}, THRESHOLD={threshold}")
+    print(f"[predictor] Pipeline config: SEQ_LEN={seq_len}, "
+          f"THRESHOLD={threshold}, INPUT_DIM={input_dim}")
 
-    # ---------------------------------------------------------
-    # FIX: FACE MODEL KEY MAPPING
-    # ---------------------------------------------------------
-    face_net = DynamicFaceLSTM(extractor=ModalityFeatureExtractor(), feature_dim=576, hidden_dim=256, num_layers=2)
-
-    # 1. Load the raw dictionary from the .pth file
-    raw_face_state_dict = torch.load(FACE_MODEL_WEIGHT_PATH, map_location=DEVICE)
-
-    # 2. Translate old 'conv_block' keys to new 'extractor.conv_blocks' keys
-    mapped_face_state_dict = {}
-    for key, value in raw_face_state_dict.items():
-        new_key = key.replace("conv_block.", "extractor.conv_blocks.")
-        mapped_face_state_dict[new_key] = value
-
-    # 3. Load the mapped dictionary
-    face_net.load_state_dict(mapped_face_state_dict)
-    # ---------------------------------------------------------
-
-    # The Arms model already used 'extractor' in its old format, so it loads normally
-    arms_net = DynamicArmsLSTM(extractor=ModalityFeatureExtractor(), feature_dim=576, hidden_dim=256, num_layers=2)
-    arms_net.load_state_dict(torch.load(ARMS_MODEL_WEIGHT_PATH, map_location=DEVICE))
+    # ---- Build models ----
+    face_net = _build_model_from_config(face_config, FACE_MODEL_WEIGHT_PATH)
+    arms_net = _build_model_from_config(arms_config, ARMS_MODEL_WEIGHT_PATH)
 
     # Merge into Pipeline
     model = MultimodalPipeline(face_net=face_net, arms_net=arms_net)
     model.to(DEVICE)
     model.eval()
 
-    return model, updated_config
+    return model, pipeline_config
 
 
 def infer_segment(model, config):
     """Processes face and arm frames to generate part-based verdicts and probabilities."""
-    seq_len = config['SEQ_LEN']
+    seq_len   = config['SEQ_LEN']
     threshold = config['SIGMOID_THRESHOLD']
+    input_dim = config.get('INPUT_DIM', 224)
 
     # Define sub-directories (Assuming video_utils.py extracts them here)
     face_dir  = os.path.join(TEMP_FRAMES, "face")
@@ -82,13 +130,13 @@ def infer_segment(model, config):
     target_indices = np.around(target_indices).astype(int)
 
     transform = transforms.Compose([
-        transforms.Resize((112, 112)),
+        transforms.Resize((input_dim, input_dim)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
     faces, l_arms, r_arms = [], [], []
-    black_tensor = transform(Image.new('RGB', (112, 112), color='black'))
+    black_tensor = transform(Image.new('RGB', (input_dim, input_dim), color='black'))
 
     for i in target_indices:
         base_name = frames[i]
@@ -116,6 +164,9 @@ def infer_segment(model, config):
         face_logits, arms_logits = model(face_tensor, l_arm_tensor, r_arm_tensor)
         face_prob  = torch.sigmoid(face_logits).item()
         arms_prob  = torch.sigmoid(arms_logits).item()
+
+    # Explicitly free GPU tensors to prevent VRAM leaks
+    del face_tensor, l_arm_tensor, r_arm_tensor, face_logits, arms_logits
 
     # --- Verdict Logic ---
     avg_prob = (face_prob + arms_prob) / 2.0

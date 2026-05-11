@@ -20,12 +20,12 @@ OPENPOSE_EXE = r"bin\OpenPoseDemo.exe"
 # MODEL_CONFIG_PATH = r"Project_Directory/model_results/CustomCNN/CustomCNNLarge/model_config.json"
 # MODEL_WEIGHT_PATH = r"Project_Directory/model_results/CustomCNN/CustomCNNLarge/best_cnn_loss.pth"
 
-FACE_MODEL_CONFIG_PATH = r"app/ai/models_structure/weights/MobileNetV3SmallFaceOnlyLSTM V3/model_config.json"
-FACE_MODEL_WEIGHT_PATH = r"app/ai/models_structure/weights/MobileNetV3SmallFaceOnlyLSTM V3/best_cnn_loss.pth"
+FACE_MODEL_CONFIG_PATH = r"app/ai/models_structure/weights/ResNet18_LSTM_Face_NUM_RNN_LAYERS_1/model_config.json"
+FACE_MODEL_WEIGHT_PATH = r"app/ai/models_structure/weights/ResNet18_LSTM_Face_NUM_RNN_LAYERS_1/best_face_loss.pth"
 
 
-ARMS_MODEL_CONFIG_PATH = r"app/ai/models_structure/weights/MobileNetV3SmallArmsOnlyLSTM V3/model_config.json"
-ARMS_MODEL_WEIGHT_PATH = r"app/ai/models_structure/weights/MobileNetV3SmallArmsOnlyLSTM V3/best_arms_loss.pth"
+ARMS_MODEL_CONFIG_PATH = r"app/ai/models_structure/weights/ResNet18_LSTM_Arms_NUM_RNN_LAYERS_1/model_config.json"
+ARMS_MODEL_WEIGHT_PATH = r"app/ai/models_structure/weights/ResNet18_LSTM_Arms_NUM_RNN_LAYERS_1/best_arms_loss.pth"
 
 # Temporary Directories — resolved to absolute paths so they work from any cwd
 _this_dir = os.path.dirname(os.path.abspath(__file__))
