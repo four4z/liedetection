@@ -5,7 +5,6 @@ from bson import ObjectId
 
 
 class PyObjectId(str):
-    """Custom ObjectId type for Pydantic"""
     @classmethod
     def __get_validators__(cls):
         yield cls.validate
@@ -22,25 +21,21 @@ class PyObjectId(str):
 # ============ USER MODELS ============
 
 class UserCreate(BaseModel):
-    """For user registration"""
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
-    password: str = Field(..., min_length=6)
+    password: str = Field(..., min_length=8)  # consistent with reset password
 
 
 class UserLogin(BaseModel):
-    """For user login"""
     email: EmailStr
     password: str
 
 
 class GoogleAuth(BaseModel):
-    """For Google OAuth"""
-    credential: str  # Google ID token
+    credential: str
 
 
 class UserResponse(BaseModel):
-    """User data returned to client"""
     id: str
     username: str
     email: str
@@ -50,28 +45,47 @@ class UserResponse(BaseModel):
 
 
 class UserInDB(BaseModel):
-    """User as stored in database"""
     username: str
     email: str
     passwordHash: Optional[str] = None
     googleId: Optional[str] = None
-    authProvider: str  # "local" or "google"
+    authProvider: str
     avatarUrl: Optional[str] = None
     createdAt: datetime
     lastLogin: Optional[datetime] = None
 
 
+class UserUpdate(BaseModel):
+    username: Optional[str] = Field(None, min_length=3, max_length=50)
+    avatarUrl: Optional[str] = None
+
+
+# ============ AUTH REQUEST BODIES ============
+
+class ForgetPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class VerifyOTPRequest(BaseModel):
+    email: EmailStr
+    otp: str
+
+
+class ResetPasswordRequest(BaseModel):
+    reset_token: str
+    new_password: str = Field(..., min_length=8)
+    confirm_password: str
+
+
 # ============ VIDEO MODELS ============
 
 class VideoLinkSubmit(BaseModel):
-    """For submitting a video URL"""
     video_url: str
-    video: Optional[str] = None           # display name / filename
+    video: Optional[str] = None
     thumbnail_url: Optional[str] = None
 
 
 class VideoUpload(BaseModel):
-    """Returned immediately after upload (before analysis runs)"""
     id: str
     video: str
     video_url: str
@@ -82,43 +96,56 @@ class VideoUpload(BaseModel):
     session_token: Optional[str] = None
 
 
+class VideoRename(BaseModel):
+    video: str = Field(..., min_length=1, max_length=200)
+
+
+class ClaimRequest(BaseModel):
+    session_token: str
+
+
+class VideoStatus(BaseModel):
+    """Lightweight status-only response for polling."""
+    id: str
+    analysis_status: str
+    summary: Optional["VideoSummary"] = None
+    analysis_error: Optional[str] = None
+
+
 class SegmentResult(BaseModel):
-    """Analysis result for one time-segment of the video"""
-    timestamp: str                              # e.g. "00:00:00–00:00:05"
-    face_confidence_score: float               # 0.0–1.0, from hand-to-face signal
+    timestamp: str
+    face_confidence_score: float
     face_verdict: Literal["TRUTH", "LIE"]
-    arms_confidence_score: float               # 0.0–1.0, from arm movement signal
+    arms_confidence_score: float
     arms_verdict: Literal["TRUTH", "LIE"]
-    average_confidence_score_segment: float    # avg of face + arms scores
-    verdict: Literal["TRUTH", "LIE"]           # driven by whichever score is higher
-    parts_indicate: Literal["face", "arms"]    # which part drove the verdict
-    average_based_verdict: Literal["TRUTH", "LIE"]  # verdict from average score
-    face_image_b64: str                        # base64-encoded JPEG of representative frame
+    average_confidence_score_segment: float
+    verdict: Literal["TRUTH", "LIE"]
+    parts_indicate: Literal["face", "arms"]
+    average_based_verdict: Literal["TRUTH", "LIE"]
+    face_image_b64: Optional[str] = None
 
 
 class VideoSummary(BaseModel):
-    """Aggregated summary across all segments"""
-    average_confidence_score: float            # mean confidence across all segments
-    final_verdict: Literal["TRUTH", "LIE"]    # LIE if avg >= 0.60
+    average_confidence_score: float
+    final_verdict: Literal["TRUTH", "LIE"]
     total_segments_analyzed: int
 
 
 class VideoResponse(BaseModel):
-    """Full video document returned to the client"""
     id: str
     user_id: Optional[str] = None
     video: str
     video_url: str
     thumbnail_url: Optional[str] = None
     uploaded_at: datetime
-    video_duration: Optional[str] = None       # "HH:MM:SS"
+    video_duration: Optional[str] = None
     segments: List[SegmentResult] = []
     summary: Optional[VideoSummary] = None
-    analysis_status: str = "pending"           # pending / processing / completed / failed
+    analysis_status: str = "pending"
+    analysis_error: Optional[str] = None
 
 
 class VideoListItem(BaseModel):
-    """Lightweight video entry for list views (no segments payload)"""
     id: str
     user_id: Optional[str] = None
     video: str
@@ -128,52 +155,59 @@ class VideoListItem(BaseModel):
     video_duration: Optional[str] = None
     summary: Optional[VideoSummary] = None
     analysis_status: str = "pending"
+    analysis_error: Optional[str] = None
+
+
+class PaginatedVideos(BaseModel):
+    items: List[VideoListItem]
+    total: int
+    skip: int
+    limit: int
+    has_more: bool
 
 
 class VideoInDB(BaseModel):
-    """Video document shape as stored in MongoDB"""
     user_id: Optional[str] = None
     session_token: Optional[str] = None
-    video: str                                 # display name / filename
+    video: str
     video_url: str
     thumbnail_url: Optional[str] = None
     uploaded_at: datetime
-    video_duration: Optional[str] = None       # "HH:MM:SS"
+    video_duration: Optional[str] = None
     is_anonymous: bool
     is_claimed: bool = False
     segments: List[dict] = []
     summary: Optional[dict] = None
-    analysis_status: str = "pending"           # pending / processing / completed / failed
+    analysis_status: str = "pending"
+    analysis_error: Optional[str] = None
 
 
 # ============ HISTORY MODELS ============
 
 class HistoryLog(BaseModel):
-    """History log entry — includes video metadata for display"""
     id: str
     userId: str
     videoId: str
     viewedAt: datetime
-    # Video metadata (populated from videos collection on read)
-    video: str        # display name / filename
-    video_url: str
-    thumbnail_url: str
+    video: Optional[str] = None
+    video_url: Optional[str] = None
+    thumbnail_url: Optional[str] = None
 
 
 class HistoryLogCreate(BaseModel):
-    """For creating history log"""
     videoId: str
 
 
 # ============ AUTH TOKENS ============
 
 class Token(BaseModel):
-    """JWT token response"""
     access_token: str
     token_type: str = "bearer"
 
 
 class TokenData(BaseModel):
-    """Data encoded in JWT"""
     user_id: str
     email: str
+
+
+VideoStatus.model_rebuild()
