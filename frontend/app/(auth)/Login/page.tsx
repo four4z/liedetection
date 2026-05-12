@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
@@ -75,6 +75,7 @@ function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
     const [isGoogleReady, setIsGoogleReady] = useState(false);
+    const hasInitializedGoogle = useRef(false);
     const { login } = useAuth();
     const router = useRouter();
     const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
@@ -103,12 +104,16 @@ function LoginPage() {
     );
 
     useEffect(() => {
-        if (!googleClientId) {
+        if (!googleClientId || hasInitializedGoogle.current) {
             return;
         }
 
         const initializeGoogle = () => {
             if (!window.google?.accounts?.id) {
+                return;
+            }
+
+            if (hasInitializedGoogle.current) {
                 return;
             }
 
@@ -119,6 +124,7 @@ function LoginPage() {
                 use_fedcm_for_prompt: false,
             });
 
+            hasInitializedGoogle.current = true;
             setIsGoogleReady(true);
         };
 
