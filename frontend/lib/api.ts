@@ -81,6 +81,7 @@ export interface ApiHistoryLog {
 export interface TimeWarpPoint {
     id: string;
     timestamp: number;
+    timestampLabel?: string;
     confidence: number;
     label: string;
     partsIndicate?: "arms" | "face";
@@ -291,9 +292,10 @@ export const videosApi = {
             body: { video_url: videoUrl, video: title },
         }),
 
-    triggerAnalysis: (videoId: string) =>
+    triggerAnalysis: (videoId: string, token?: string | null) =>
         apiRequest<{ message: string; videoId: string; status: string }>(`/api/videos/${videoId}/analyze`, {
             method: "POST",
+            token,
         }),
 
     claimAnonymous: (token: string, sessionToken: string) =>
@@ -327,6 +329,7 @@ export const buildTimeWarpPoints = (video: ApiVideo): TimeWarpPoint[] => {
     return video.segments.map((segment, index) => ({
         id: `segment-${index + 1}`,
         timestamp: parseTimestampToSeconds(segment.timestamp),
+        timestampLabel: segment.timestamp,
         confidence: normalizeConfidence(segment.average_confidence_score_segment),
         label: segment.verdict,
         partsIndicate: segment.parts_indicate,

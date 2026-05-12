@@ -119,7 +119,7 @@ const handleDeleteVideo = () => {
             // Step 2: Submit video URL to backend and trigger analysis.
             const resolvedTitle = videoTitle.trim() || getDefaultTitle(file.name);
             const backendData = await videosApi.uploadLink(s3VideoUrl, resolvedTitle, token);
-            await videosApi.triggerAnalysis(backendData.id);
+            await videosApi.triggerAnalysis(backendData.id, token);
 
             console.log("Video submission successful:", backendData);
             alert("วิดีโอถูกส่งและเริ่มวิเคราะห์แล้ว");
