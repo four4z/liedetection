@@ -24,12 +24,20 @@ const getErrorMessage = (detail: unknown, fallback: string) => {
     return fallback;
 };
 
+const getSearchParam = (value: string | string[] | null) => {
+    if (Array.isArray(value)) {
+        return value[0] || "";
+    }
+
+    return value || "";
+};
+
 function ResetPasswordContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
-    const token = searchParams.get("token") || "";
-    const email = searchParams.get("email") || "";
+    const token = getSearchParam(searchParams.get("token"));
+    const email = getSearchParam(searchParams.get("email"));
 
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");

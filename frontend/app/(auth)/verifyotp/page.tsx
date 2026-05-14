@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@iconify/react";
@@ -23,10 +23,18 @@ const getErrorMessage = (detail: unknown, fallback: string) => {
     return fallback;
 };
 
-export default function VerifyOtpPage() {
+const getSearchParam = (value: string | string[] | null) => {
+    if (Array.isArray(value)) {
+        return value[0] || "";
+    }
+
+    return value || "";
+};
+
+function VerifyOtpContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const initialEmail = searchParams.get("email") || "";
+    const initialEmail = getSearchParam(searchParams.get("email"));
     const [email, setEmail] = useState(initialEmail);
     const [otp, setOtp] = useState("");
     const [loading, setLoading] = useState(false);
@@ -115,5 +123,13 @@ export default function VerifyOtpPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function VerifyOtpPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <VerifyOtpContent />
+        </Suspense>
     );
 }
