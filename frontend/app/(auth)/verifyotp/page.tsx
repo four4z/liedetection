@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { authApi } from "@/lib/api";
 
+export const dynamic = "force-dynamic";
+
 const getErrorMessage = (detail: unknown, fallback: string) => {
     if (typeof detail === "string" && detail.trim()) {
         return detail;
