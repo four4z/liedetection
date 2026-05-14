@@ -3,11 +3,26 @@
 import Footer from "./component/Footer";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
+import { useRouter } from "next/navigation";
+import { Icon } from "@iconify/react";
+import React, { useState } from "react";
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const displayName = user?.username?.trim() || "User";
+  const displayInitial = (Array.from(displayName)[0] || "U").toUpperCase();
+  const [openPopup, setOpenPopup] = useState(false);
 
+  const togglePopup = () => {
+    setOpenPopup((prev) => !prev);
+  };
 
+  const handleLogout = () => {
+    logout();
+    setOpenPopup(false);
+    router.push("/");
+  };
   return (
     <>
       <div className="bg-dark-gradient min-h-screen text-white relative overflow-hidden">
@@ -17,12 +32,32 @@ export default function Home() {
 
         <div className="w-full px-36 p-5 ">
           <div className="flex justify-between ">
-            <div>◉ LieDetect</div>
+            <h2 className=" text-xl">◉ LieDetect</h2>
             <div className="flex gap-4 items-center">
               {user ? (
-                <span className="border-glass-custom bg-glass-custom p-2 px-6 rounded-xl">
-                  {user.username}
-                </span>
+                <div className="relative">
+                  <button
+                    onClick={togglePopup}
+                    className="flex items-center  rounded-xl hover:opacity-90 transition-opacity"
+                  >
+                    <div className="flex items-center justify-center w-10 h-10 shrink-0 rounded-full bg-[#ff7a00] text-white font-extrabold text-lg leading-none uppercase">
+                      {displayInitial}
+                    </div>
+               
+                  </button>
+
+                  {openPopup && (
+                    <div className="absolute top-full right-0 mt-2 bg-white text-black p-2 rounded-lg shadow-xl z-50 w-40">
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 w-full px-3 py-2 rounded-lg hover:bg-slate-200"
+                      >
+                        <Icon icon="mdi:logout" width="20" height="20" />
+                        <span className="text-sm">Logout</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <>
                   <Link href="/Login">
@@ -34,6 +69,7 @@ export default function Home() {
                 </>
               )}
             </div>
+            
           </div>
         </div>
 
@@ -98,6 +134,7 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+              
 
             </div>
           </div>

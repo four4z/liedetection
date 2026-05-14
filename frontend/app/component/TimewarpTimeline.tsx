@@ -45,6 +45,9 @@ export default function TimewarpTimeline({
         return `${mins}:${secs.toString().padStart(2, "0")}`;
     };
 
+    const getPointTimestampLabel = (point: TimeWarpPoint) =>
+        point.timestampLabel || formatTime(point.timestamp);
+
     const getConfidenceColor = (confidence: number) => {
         if (confidence >= 0.8) return "bg-red-500";
         if (confidence >= 0.6) return "bg-green-500";
@@ -187,7 +190,7 @@ export default function TimewarpTimeline({
                                 <div className="flex gap-2">
                                     <img
                                         src={point.thumbnail || "/img/noimg.jpg"}
-                                        alt={`Frame at ${formatTime(point.timestamp)}`}
+                                        alt={`Frame at ${getPointTimestampLabel(point)}`}
                                         className="w-25 h-18 object-cover rounded-md border border-gray-700"
                                         onError={(event) => {
                                             event.currentTarget.onerror = null;
@@ -217,7 +220,7 @@ export default function TimewarpTimeline({
                                     <div className="flex justify-between items-center">
                                         <div className="flex flex-wrap items-center gap-2">
                                             <span className="rounded-full bg-gray-800 px-2 py-1 text-xs text-gray-200 font-mono">
-                                                {formatTime(point.timestamp)}
+                                                {getPointTimestampLabel(point)}
                                             </span>
                                             <span
                                                 className={`rounded-full px-2 py-1 text-[10px] font-semibold ${getPointFilterType(point) === "lie"

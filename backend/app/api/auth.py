@@ -276,7 +276,7 @@ async def google_auth(auth_data: GoogleAuth):
     return Token(access_token=access_token)
 
 
-@router.post("/forgotpassword", response_model=MessageResponse)
+@router.post("/forgetpassword", response_model=MessageResponse)
 async def forgot_password(payload: PasswordResetRequest):
     """Send a password reset OTP to the user's email"""
     users = get_users_collection()

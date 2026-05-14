@@ -1,4 +1,12 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/+$/, "");
+
+export const API_BASE_URL = normalizeBaseUrl(
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+);
+
+const isNgrokUrl = API_BASE_URL.includes("ngrok-free.dev") || API_BASE_URL.includes("ngrok.io");
+
+const buildApiUrl = (path: string) => `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 
 export interface ApiTokenResponse {
     access_token: string;
@@ -73,6 +81,7 @@ export interface ApiHistoryLog {
 export interface TimeWarpPoint {
     id: string;
     timestamp: number;
+    timestampLabel?: string;
     confidence: number;
     label: string;
     partsIndicate?: "arms" | "face";
@@ -182,17 +191,26 @@ const toErrorMessage = (detail: unknown, fallback: string) => {
 };
 
 const apiRequest = async <T>(path: string, options: RequestOptions = {}): Promise<T> => {
-    const headers: HeadersInit = {
-        "Content-Type": "application/json",
+    const headers: Record<string, string> = {
+        Accept: "application/json",
     };
+
+    if (options.body !== undefined) {
+        headers["Content-Type"] = "application/json";
+    }
 
     if (options.token) {
         headers.Authorization = `Bearer ${options.token}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}${path}`, {
+    if (isNgrokUrl) {
+        headers["ngrok-skip-browser-warning"] = "true";
+    }
+
+    const response = await fetch(buildApiUrl(path), {
         method: options.method || "GET",
         headers,
+        mode: "cors",
         body: options.body ? JSON.stringify(options.body) : undefined,
     });
 
@@ -229,7 +247,7 @@ export const authApi = {
         }),
 
     requestPasswordReset: (email: string) =>
-        apiRequest<ApiMessageResponse>("/api/auth/forgotpassword", {
+        apiRequest<ApiMessageResponse>("/api/auth/forgetpassword", {
             method: "POST",
             body: { email },
         }),
@@ -274,9 +292,10 @@ export const videosApi = {
             body: { video_url: videoUrl, video: title },
         }),
 
-    triggerAnalysis: (videoId: string) =>
+    triggerAnalysis: (videoId: string, token?: string | null) =>
         apiRequest<{ message: string; videoId: string; status: string }>(`/api/videos/${videoId}/analyze`, {
             method: "POST",
+            token,
         }),
 
     claimAnonymous: (token: string, sessionToken: string) =>
@@ -287,6 +306,19 @@ export const videosApi = {
                 token,
             }
         ),
+
+    rename: (videoId: string, newTitle: string, token?: string | null) =>
+        apiRequest<ApiMessageResponse>(`/api/videos/${videoId}/rename`, {
+            method: "PATCH",
+            token,
+            body: { video: newTitle },
+        }),
+
+    delete: (videoId: string, token?: string | null) =>
+        apiRequest<ApiMessageResponse>(`/api/videos/${videoId}`, {
+            method: "DELETE",
+            token,
+        }),
 };
 
 export const historyApi = {
@@ -310,6 +342,7 @@ export const buildTimeWarpPoints = (video: ApiVideo): TimeWarpPoint[] => {
     return video.segments.map((segment, index) => ({
         id: `segment-${index + 1}`,
         timestamp: parseTimestampToSeconds(segment.timestamp),
+        timestampLabel: segment.timestamp,
         confidence: normalizeConfidence(segment.average_confidence_score_segment),
         label: segment.verdict,
         partsIndicate: segment.parts_indicate,
