@@ -226,7 +226,7 @@ function LoginPage() {
                         </div>
 
                         <div className="flex justify-end">
-                            <Link href="/forgotpassword" className="text-xs text-blue-400 hover:underline">
+                            <Link href="/forgetpassword" className="text-xs text-blue-400 hover:underline">
                                 Forgot password?
                             </Link>
                         </div>

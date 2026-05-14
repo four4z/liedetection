@@ -55,7 +55,7 @@ export default function VerifyOtpPage() {
         <div className="flex justify-center items-center min-h-screen">
             <div className="min-h-screen flex items-center justify-center">
                 <div className="w-full max-w-sm bg-dark-custom border border-dark-custom rounded-3xl shadow-lg p-12 text-white">
-                    <Link href="/forgotpassword" className="flex items-center mb-6">
+                    <Link href="/forgetpassword" className="flex items-center mb-6">
                         <Icon icon="weui:back-outlined" width="12" height="24" />
                     </Link>
 
@@ -106,7 +106,7 @@ export default function VerifyOtpPage() {
 
                     <p className="mt-6 text-center text-sm text-white/60">
                         Need a new code?{" "}
-                        <Link href="/forgotpassword" className="text-blue-400 hover:underline cursor-pointer">
+                        <Link href="/forgetpassword" className="text-blue-400 hover:underline cursor-pointer">
                             Resend
                         </Link>
                     </p>

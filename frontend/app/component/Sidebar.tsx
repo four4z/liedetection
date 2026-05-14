@@ -17,6 +17,9 @@ export default function Sidebar({ children }: SidebarProps) {
     const pathname = usePathname();
     const { user, logout, isLoading } = useAuth();
     const router = useRouter();
+    const displayName = user?.username?.trim() || "User";
+    const displayInitial = (Array.from(displayName)[0] || "U").toUpperCase();
+
     const togglePopup = () => {
         setOpenPopup((prev) => !prev);
     };
@@ -116,15 +119,12 @@ export default function Sidebar({ children }: SidebarProps) {
                 {user ? (
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <Icon
-                                icon="mdi:account-circle"
-                                width="32"
-                                height="32"
-                                className="shrink-0 text-white"
-                            />
+                            <div className="flex items-center justify-center w-8 h-8 shrink-0 rounded-full bg-[#ff7a00] text-white font-extrabold text-l leading-none">
+                                {displayInitial}
+                            </div>
                             {isOpen && (
-                                <span className="whitespace-nowrap text-sm font-medium">
-                                    {isLoading ? "Loading..." : user?.username || "no token"}
+                                <span className="truncate max-w-32 text-sm font-medium">
+                                    {isLoading ? "Loading..." : displayName}
                                 </span>
                             )}
                         </div>

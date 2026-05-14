@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import TimewarpTimeline from "../../../component/TimewarpTimeline";
+import RenameModal from "../../../component/RenameModal";
 import {
     ApiVideo,
     TimeWarpPoint,
@@ -18,12 +19,17 @@ export default function VideoDetailPage() {
     const router = useRouter();
     const videoId = params.id as string;
     const videoRef = useRef<HTMLVideoElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
     const { token, isLoading: authLoading } = useAuth();
 
     const [video, setVideo] = useState<ApiVideo | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
+    const [showRenameModal, setShowRenameModal] = useState(false);
+    const [showActionMenu, setShowActionMenu] = useState(false);
+    const [isRenaming, setIsRenaming] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const timewarpPoints = useMemo<TimeWarpPoint[]>(() => {
         if (!video) {
@@ -62,14 +68,54 @@ export default function VideoDetailPage() {
         }
     }, [videoId, authLoading, fetchVideoDetail]);
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString("th-TH", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        });
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setShowActionMenu(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    const handleRename = async (newTitle: string) => {
+        if (!token) {
+            console.error("No token available");
+            return;
+        }
+
+        try {
+            setIsRenaming(true);
+            await videosApi.rename(videoId, newTitle, token);
+            setVideo((prev) =>
+                prev ? { ...prev, video: newTitle } : null
+            );
+            setShowRenameModal(false);
+        } catch (err) {
+            throw err;
+        } finally {
+            setIsRenaming(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!token || !window.confirm("Are you sure you want to delete this video? This action cannot be undone.")) {
+            return;
+        }
+
+        try {
+            setIsDeleting(true);
+            await videosApi.delete(videoId, token);
+            router.push("/list");
+        } catch (err) {
+            console.error("Failed to delete video:", err);
+            setError(err instanceof Error ? err.message : "Failed to delete video");
+            setIsDeleting(false);
+        }
     };
 
     if (loading) {
@@ -101,167 +147,177 @@ export default function VideoDetailPage() {
     }
 
     return (
-        <div className=" mx-auto p-6 w-full">
-            <div className="flex items-center gap-4 mb-6">
+        <div className="mx-auto w-full">
+            {/* Header Bar */}
+            <div className="flex items-center h-13 px-5 bg-[#1a1a1a] border-b border-[#2a2a2a] gap-3">
+                {/* Back Button */}
                 <button
                     onClick={() => router.push("/list")}
-                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                    className="flex items-center gap-1.5 text-gray-500 hover:text-gray-300 transition-colors whitespace-nowrap text-sm"
                 >
-                    <Icon icon="mdi:arrow-left" width="20" height="20" />
-                    Back
+                    <Icon icon="mdi:arrow-left" width="18" height="18" />
+                    <span className="font-normal">Back</span>
                 </button>
-                <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                    {getVideoTitle(video)}
 
-                </h2>
-                <p className="mt-2e font-medium text-sm text-gray-400">{formatDate(video.uploaded_at)}</p>
-            </div>
+                {/* Vertical Divider */}
+                <div className="w-px h-6 bg-[#2a2a2a]" />
 
-            <div className="mb-2 grid grid-cols-1 gap-6 lg:grid-cols-7 lg:grid-rows-7 lg:h-195">
-                <div className="lg:[grid-area:1/1/6/6] rounded-lg w-full h-full">
-                    {videoUrl ? (
-                        <div className="h-full w-full bg-black rounded-lg overflow-hidden">
-                            <video
-                                ref={videoRef}
-                                controls
-                                className="w-full h-full object-contain"
-                                src={videoUrl}
-                                poster={video.thumbnail_url || undefined}
+                {/* Title (flex-grow) */}
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <h1 className="text-lg font-medium text-white truncate">
+                        {getVideoTitle(video)}
+                    </h1>
+                    {/* 3-dot Action Menu */}
+                <div ref={menuRef} className="relative">
+                    <button
+                        onClick={() => setShowActionMenu((prev) => !prev)}
+                        disabled={isDeleting || isRenaming}
+                        className="flex items-center justify-center w-8 h-8 rounded  text-gray-400 hover:text-gray-200 transition-colors disabled:opacity-50"
+                        title="More actions"
+                    >
+                        <Icon icon="mdi:dots-vertical" width="18" height="18" />
+                    </button>
+
+                    {showActionMenu && (
+                        <div className="absolute left-0 top-10 z-30 w-40 rounded-md border border-[#2a2a2a] bg-[#111111] shadow-lg overflow-hidden">
+                            <button
+                                onClick={() => {
+                                    setShowActionMenu(false);
+                                    setShowRenameModal(true);
+                                }}
+                                disabled={isRenaming || isDeleting}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-200 hover:bg-[#1e1e1e] transition-colors disabled:opacity-50"
                             >
-                                Your browser does not support video playback.
-                            </video>
-                        </div>
-                    ) : (
-                        <div className="h-full w-full bg-gray-700 rounded-lg flex items-center justify-center">
-                            <div className="text-center">
-                                <Icon
-                                    icon="mdi:video-off"
-                                    width="48"
-                                    height="48"
-                                    className="text-gray-400 mb-2"
-                                />
-                                <p className="text-gray-400">Unable to load video.</p>
-                            </div>
+                                <Icon icon="mdi:pencil" width="16" height="16" />
+                                <span>Rename</span>
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowActionMenu(false);
+                                    void handleDelete();
+                                }}
+                                disabled={isDeleting || isRenaming}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-900/20 transition-colors disabled:opacity-50"
+                            >
+                                <Icon icon="mdi:trash" width="16" height="16" />
+                                <span>{isDeleting ? "Deleting..." : "Delete"}</span>
+                            </button>
                         </div>
                     )}
                 </div>
-
-                <div className="lg:[grid-area:1/6/8/8] min-h-75 lg:min-h-0 h-full">
-                    <TimewarpTimeline
-                        points={timewarpPoints}
-                        onPointClick={(timestamp) => {
-                            if (videoRef.current) {
-                                videoRef.current.currentTime = timestamp;
-                            }
-                        }}
-                    />
                 </div>
 
+                {/* Date & Time Badge */}
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded border border-[#2a2a2a] bg-black/30 text-gray-500 text-m  whitespace-nowrap">
+                    <Icon icon="mdi:calendar" width="18" height="18" />
+                    <span className="font-normal">
+                        {new Date(video.uploaded_at).toLocaleDateString("th-TH", {
+                            day: "numeric",
+                            month: "short",
+                            year: "2-digit",
+                        })}
+                        {" · "}
+                        {new Date(video.uploaded_at).toLocaleTimeString("th-TH", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                        })}
+                    </span>
+                </div>
 
-                <div className="lg:[grid-area:6/1/8/6] space-y-6">
+                
 
-                    {/* 🔹 Container 1: Summary */}
-                    <div className=" rounded-lg w-full">
-                        <div className="grid gap-4 md:grid-cols-3">
-                            <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
-                                <p className="text-sm text-gray-400">Final verdict</p>
-                                <p className={`mt-2 font-semibold ${video.summary?.final_verdict === "LIE"
-                                        ? "text-red-400"
-                                        : "text-green-400"
-                                    }`}>
-                                    {video.summary?.final_verdict || "-"}
-                                </p>
+            </div>
+
+            {/* Content Area */}
+            <div className="p-6 w-full">
+
+                <div className="mb-2 grid grid-cols-1 gap-6 lg:grid-cols-7 lg:grid-rows-7 lg:h-195">
+                    <div className="lg:[grid-area:1/1/6/6] rounded-lg w-full h-full">
+                        {videoUrl ? (
+                            <div className="h-full w-full bg-black rounded-lg overflow-hidden">
+                                <video
+                                    ref={videoRef}
+                                    controls
+                                    className="w-full h-full object-contain"
+                                    src={videoUrl}
+                                    poster={video.thumbnail_url || undefined}
+                                >
+                                    Your browser does not support video playback.
+                                </video>
                             </div>
-
-                            <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
-                                <p className="text-sm text-gray-400">Average confidence</p>
-                                <p className="mt-2 text-white font-medium">
-                                    {video.summary
-                                        ? formatConfidencePercent(video.summary.average_confidence_score)
-                                        : "-"}
-                                </p>
+                        ) : (
+                            <div className="h-full w-full bg-gray-700 rounded-lg flex items-center justify-center">
+                                <div className="text-center">
+                                    <Icon
+                                        icon="mdi:video-off"
+                                        width="48"
+                                        height="48"
+                                        className="text-gray-400 mb-2"
+                                    />
+                                    <p className="text-gray-400">Unable to load video.</p>
+                                </div>
                             </div>
-
-                            <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
-                                <p className="text-sm text-gray-400">Segments analyzed</p>
-                                <p className="mt-2 text-white font-medium">
-                                    {video.summary?.total_segments_analyzed ?? video.segments.length}
-                                </p>
-                            </div>
-                        </div>
+                        )}
                     </div>
 
-                    {/* 🔹 Container 2: Segments */}
-                    {/* <div className="bg-greay-custom rounded-lg p-6 w-full h-full overflow-auto custom-scroll">
-                        <h4 className="text-md font-semibold text-white mb-3">Segments</h4>
+                    <div className="lg:[grid-area:1/6/8/8] min-h-75 lg:min-h-0 h-full">
+                        <TimewarpTimeline
+                            points={timewarpPoints}
+                            onPointClick={(timestamp) => {
+                                if (videoRef.current) {
+                                    videoRef.current.currentTime = timestamp;
+                                }
+                            }}
+                        />
+                    </div>
 
-                        <div className="space-y-3">
-                            {video.segments.length === 0 ? (
-                                <div className="text-center py-8 text-gray-400">
-                                    <Icon icon="mdi:timeline-clock-outline" width="32" height="32" className="mx-auto mb-2" />
-                                    <p>No segment data available</p>
+
+                    <div className="lg:[grid-area:6/1/8/6] space-y-6">
+
+                        {/* 🔹 Container 1: Summary */}
+                        <div className=" rounded-lg w-full">
+                            <div className="grid gap-4 md:grid-cols-3">
+                                <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
+                                    <p className="text-sm text-gray-400">Final verdict</p>
+                                    <p className={`mt-2 font-semibold ${video.summary?.final_verdict === "LIE"
+                                        ? "text-red-400"
+                                        : "text-green-400"
+                                        }`}>
+                                        {video.summary?.final_verdict || "-"}
+                                    </p>
                                 </div>
-                            ) : (
-                                video.segments.map((segment, index) => (
-                                    <div
-                                        key={`${segment.timestamp}-${index}`}
-                                        className="rounded-lg border border-gray-700 bg-black/20 p-4"
-                                    >
-                                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
 
-                                            {segment.face_image_b64 && (
-                                                <img
-                                                    src={`data:image/jpeg;base64,${segment.face_image_b64}`}
-                                                    alt={segment.timestamp}
-                                                    className="w-full max-w-40 rounded-md border border-gray-700 object-cover"
-                                                />
-                                            )}
+                                <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
+                                    <p className="text-sm text-gray-400">Average confidence</p>
+                                    <p className="mt-2 text-white font-medium">
+                                        {video.summary
+                                            ? formatConfidencePercent(video.summary.average_confidence_score)
+                                            : "-"}
+                                    </p>
+                                </div>
 
-                                            <div className="flex-1 space-y-2">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <span className="rounded-full bg-gray-800 px-2 py-1 text-xs text-gray-200">
-                                                        {segment.timestamp}
-                                                    </span>
+                                <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
+                                    <p className="text-sm text-gray-400">Segments analyzed</p>
+                                    <p className="mt-2 text-white font-medium">
+                                        {video.summary?.total_segments_analyzed ?? video.segments.length}
+                                    </p>
+                                </div>
 
-                                                    <span className={`rounded-full px-2 py-1 text-xs font-semibold ${segment.verdict === "LIE"
-                                                            ? "bg-red-500/20 text-red-300"
-                                                            : "bg-green-500/20 text-green-300"
-                                                        }`}>
-                                                        {segment.verdict}
-                                                    </span>
-
-                                                    <span className="rounded-full bg-gray-800 px-2 py-1 text-xs text-gray-200">
-                                                        Parts: {segment.parts_indicate}
-                                                    </span>
-                                                </div>
-
-                                                <div className="grid gap-2 sm:grid-cols-2">
-                                                    <p className="text-sm text-gray-300">
-                                                        Face: {formatConfidencePercent(segment.face_confidence_score)} / {segment.face_verdict}
-                                                    </p>
-                                                    <p className="text-sm text-gray-300">
-                                                        Arms: {formatConfidencePercent(segment.arms_confidence_score)} / {segment.arms_verdict}
-                                                    </p>
-                                                    <p className="text-sm text-gray-300">
-                                                        Average: {formatConfidencePercent(segment.average_confidence_score_segment)}
-                                                    </p>
-                                                    <p className="text-sm text-gray-300">
-                                                        Based verdict: {segment.average_based_verdict}
-                                                    </p>
-                                                </div>
-
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
+                                
+                            </div>
                         </div>
-                    </div> */}
 
+                    </div>
                 </div>
             </div>
 
-
+            <RenameModal
+                isOpen={showRenameModal}
+                currentTitle={getVideoTitle(video)}
+                onClose={() => setShowRenameModal(false)}
+                onConfirm={handleRename}
+                isLoading={isRenaming}
+            />
         </div>
     );
 }

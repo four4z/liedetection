@@ -247,7 +247,7 @@ export const authApi = {
         }),
 
     requestPasswordReset: (email: string) =>
-        apiRequest<ApiMessageResponse>("/api/auth/forgotpassword", {
+        apiRequest<ApiMessageResponse>("/api/auth/forgetpassword", {
             method: "POST",
             body: { email },
         }),
@@ -306,6 +306,19 @@ export const videosApi = {
                 token,
             }
         ),
+
+    rename: (videoId: string, newTitle: string, token?: string | null) =>
+        apiRequest<ApiMessageResponse>(`/api/videos/${videoId}/rename`, {
+            method: "PATCH",
+            token,
+            body: { video: newTitle },
+        }),
+
+    delete: (videoId: string, token?: string | null) =>
+        apiRequest<ApiMessageResponse>(`/api/videos/${videoId}`, {
+            method: "DELETE",
+            token,
+        }),
 };
 
 export const historyApi = {
