@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@iconify/react";
@@ -12,7 +12,8 @@ const getErrorMessage = (detail: unknown, fallback: string) => {
     }
 
     if (detail && typeof detail === "object") {
-        const maybeMessage = (detail as { message?: unknown; detail?: unknown }).message;
+        const maybeMessage = (detail as { message?: unknown }).message;
+
         if (typeof maybeMessage === "string" && maybeMessage.trim()) {
             return maybeMessage;
         }
@@ -21,11 +22,13 @@ const getErrorMessage = (detail: unknown, fallback: string) => {
     return fallback;
 };
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
+
     const token = searchParams.get("token") || "";
     const email = searchParams.get("email") || "";
+
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [loading, setLoading] = useState(false);
@@ -48,11 +51,22 @@ export default function ResetPasswordPage() {
 
         try {
             setLoading(true);
-            await authApi.resetPassword(token, newPassword, confirmPassword);
+
+            await authApi.resetPassword(
+                token,
+                newPassword,
+                confirmPassword
+            );
+
             alert("Password reset successfully");
+
             router.push("/Login");
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : getErrorMessage(null, "Password reset failed");
+            const message =
+                err instanceof Error
+                    ? err.message
+                    : getErrorMessage(null, "Password reset failed");
+
             alert(message);
         } finally {
             setLoading(false);
@@ -63,6 +77,7 @@ export default function ResetPasswordPage() {
         <div className="flex justify-center items-center min-h-screen">
             <div className="min-h-screen flex items-center justify-center">
                 <div className="w-full max-w-sm bg-dark-custom border border-dark-custom rounded-3xl shadow-lg p-12 text-white">
+
                     <Link href="/verifyotp" className="flex items-center mb-6">
                         <Icon icon="weui:back-outlined" width="12" height="24" />
                     </Link>
@@ -73,51 +88,71 @@ export default function ResetPasswordPage() {
                         </div>
                     </div>
 
-                    <h2 className="text-2xl font-semibold text-center mb-3">Reset Password</h2>
+                    <h2 className="text-2xl font-semibold text-center mb-3">
+                        Reset Password
+                    </h2>
+
                     <p className="text-sm text-center text-white/60 mb-6">
-                        {email ? `Set a new password for ${email}` : "Set a new password for your account"}
+                        {email
+                            ? `Set a new password for ${email}`
+                            : "Set a new password for your account"}
                     </p>
 
                     <div className="space-y-4">
+
                         <div>
-                            <label className="text-sm text-white/70">New password</label>
+                            <label className="text-sm text-white/70">
+                                New password
+                            </label>
+
                             <input
                                 type="password"
                                 placeholder="New password"
                                 value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                className="mt-1 w-full rounded-xl bg-white/10 border border-white/20 px-4 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/30"
+                                onChange={(e) =>
+                                    setNewPassword(e.target.value)
+                                }
+                                className="mt-1 w-full rounded-xl bg-white/10 border border-white/20 px-4 py-2 text-sm text-white"
                             />
                         </div>
 
                         <div>
-                            <label className="text-sm text-white/70">Confirm password</label>
+                            <label className="text-sm text-white/70">
+                                Confirm password
+                            </label>
+
                             <input
                                 type="password"
                                 placeholder="Confirm password"
                                 value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="mt-1 w-full rounded-xl bg-white/10 border border-white/20 px-4 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/30"
+                                onChange={(e) =>
+                                    setConfirmPassword(e.target.value)
+                                }
+                                className="mt-1 w-full rounded-xl bg-white/10 border border-white/20 px-4 py-2 text-sm text-white"
                             />
                         </div>
 
                         <button
                             onClick={handleSubmit}
                             disabled={loading}
-                            className="w-full rounded-xl bg-dark-secondary py-2 mt-4 text-sm font-medium cursor-pointer hover:bg-dark-secondary-hover transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full rounded-xl bg-dark-secondary py-2 mt-4"
                         >
-                            {loading ? "Resetting..." : "Reset Password"}
+                            {loading
+                                ? "Resetting..."
+                                : "Reset Password"}
                         </button>
-                    </div>
 
-                    <p className="mt-6 text-center text-sm text-white/60">
-                        Back to{" "}
-                        <Link href="/Login" className="text-blue-400 hover:underline cursor-pointer">
-                            Login
-                        </Link>
-                    </p>
+                    </div>
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function ResetPasswordPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <ResetPasswordContent />
+        </Suspense>
     );
 }
