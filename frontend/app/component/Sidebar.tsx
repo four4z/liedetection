@@ -49,12 +49,12 @@ export default function Sidebar({ children }: SidebarProps) {
             icon: "mdi:home",
         },
         {
-            label: "List",
+            label: "VideoList",
             href: "/list",
             icon: "lucide:list-video",
         },
         {
-            label: "History",
+            label: "History Log",
             href: "/history",
             icon: "mdi:history",
         },

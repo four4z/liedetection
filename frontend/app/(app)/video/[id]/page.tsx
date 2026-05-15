@@ -334,7 +334,7 @@ export default function VideoDetailPage() {
                         <div className=" rounded-lg w-full">
                             <div className="grid gap-4 md:grid-cols-3">
                                 <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
-                                    <p className="text-sm text-gray-400">Final verdict</p>
+                                    <p className="text-sm text-gray-400">Final Verdict</p>
                                     <p className={`mt-2 font-semibold ${video.summary?.final_verdict === "LIE"
                                         ? "text-red-400"
                                         : "text-green-400"
@@ -344,7 +344,7 @@ export default function VideoDetailPage() {
                                 </div>
 
                                 <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
-                                    <p className="text-sm text-gray-400">Average confidence</p>
+                                    <p className="text-sm text-gray-400">Average Confidence</p>
                                     <p className="mt-2 text-white font-medium">
                                         {video.summary
                                             ? formatConfidencePercent(video.summary.average_confidence_score)
@@ -353,7 +353,7 @@ export default function VideoDetailPage() {
                                 </div>
 
                                 <div className="rounded-lg border border-gray-700 bg-black/20 p-4">
-                                    <p className="text-sm text-gray-400">Segments analyzed</p>
+                                    <p className="text-sm text-gray-400">Segments Analyzed</p>
                                     <p className="mt-2 text-white font-medium">
                                         {video.summary?.total_segments_analyzed ?? video.segments.length}
                                     </p>
