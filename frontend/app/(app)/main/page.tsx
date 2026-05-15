@@ -114,13 +114,15 @@ const handleDeleteVideo = () => {
             const uploadData = await videosApi.getUploadUrl(file.name, file.type);
 
             // Step 2: Upload the file directly from the browser to S3.
+            const formData = new FormData();
+            Object.entries(uploadData.fields).forEach(([key, value]) => {
+                formData.append(key, value);
+            });
+            formData.append("file", file);
+
             const uploadResponse = await fetch(uploadData.uploadUrl, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": file.type,
-                    "x-amz-acl": "public-read",
-                },
-                body: file,
+                method: "POST",
+                body: formData,
             });
 
             if (!uploadResponse.ok) {

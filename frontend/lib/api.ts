@@ -74,6 +74,7 @@ export interface ApiVideoUploadResponse {
 export interface ApiVideoUploadUrlResponse {
     success: boolean;
     uploadUrl: string;
+    fields: Record<string, string>;
     videoUrl: string;
     fileName: string;
 }
@@ -302,9 +303,22 @@ export const authApi = {
 
 export const videosApi = {
     getUploadUrl: (fileName: string, contentType: string) =>
-        apiRequest<ApiVideoUploadUrlResponse>('/api/upload', {
+        fetch('/api/videos/upload', {
             method: 'POST',
-            body: { fileName, contentType },
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ fileName, contentType }),
+        }).then(async (response) => {
+            const payload = await response.json().catch(() => null);
+
+            if (!response.ok) {
+                const detail = payload && typeof payload === 'object' ? (payload as { error?: unknown }).error : null;
+                throw new Error(toErrorMessage(detail, `Request failed (${response.status})`));
+            }
+
+            return payload as ApiVideoUploadUrlResponse;
         }),
 
     listMine: (token: string, skip = 0, limit = 20) =>
