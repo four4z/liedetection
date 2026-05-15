@@ -155,7 +155,6 @@ function LoginPage() {
             setIsLoading(true);
             const data = await authApi.login(email, password);
             const meData = await authApi.me(data.access_token);
-            console.log("USER:", meData);
 
             // ✅ เก็บ token และ user ใน context
             login(data.access_token, meData);
