@@ -559,7 +559,7 @@ useEffect(() => {
                             {/* Status Strip */}
                             <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-900/50 border border-slate-700/30">
                                 <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
-                                <p className="text-xs text-slate-400 ">ไฟล์วิดีโอ mp4, webm, ogg, mov</p>
+                                <p className="text-xs text-slate-400 ">ไฟล์วิดีโอ mp4, webm, mov</p>
                                 <span className="ml-auto text-xs text-slate-500 font-mono">
                                     {file ? (file.size / (1024 * 1024)).toFixed(2) + " MB" : "—"}
                                 </span>
