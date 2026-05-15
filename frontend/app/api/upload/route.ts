@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         // Generate S3 URL
         const s3Url = `https://${normalizeEnv(process.env.AWS_BUCKET_NAME)}.s3.${normalizeEnv(process.env.AWS_BUCKET_REGION) || 'ap-southeast-2'}.amazonaws.com/${fileName}`;
 
-        console.log(`File uploaded to S3: ${s3Url}`);
+        // console.log(`File uploaded to S3: ${s3Url}`);
 
         return NextResponse.json({
             success: true,

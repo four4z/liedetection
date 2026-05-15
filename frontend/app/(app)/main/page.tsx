@@ -111,7 +111,7 @@ const handleDeleteVideo = () => {
         setIsAnalyzing(true);
         try {
             // Step 1: Ask the app for a presigned S3 upload URL.
-            console.log("Requesting presigned upload URL for:", file.name);
+            // console.log("Requesting presigned upload URL for:", file.name);
             const uploadData = await videosApi.getUploadUrl(file.name, file.type);
 
             // Step 2: Upload the file directly from the browser to S3.
@@ -130,14 +130,14 @@ const handleDeleteVideo = () => {
                 throw new Error(`Failed to upload video to S3 (${uploadResponse.status})`);
             }
 
-            console.log("Video uploaded to S3:", uploadData.videoUrl);
+            // console.log("Video uploaded to S3:", uploadData.videoUrl);
 
             // Step 3: Submit video URL to backend and trigger analysis.
             const resolvedTitle = videoTitle.trim() || getDefaultTitle(file.name);
             const backendData = await videosApi.uploadLink(uploadData.videoUrl, resolvedTitle, token);
             await videosApi.triggerAnalysis(backendData.id, token);
 
-            console.log("Video submission successful:", backendData);
+            // console.log("Video submission successful:", backendData);
             toast.success("วิดีโอถูกส่งและเริ่มวิเคราะห์แล้ว");
 
             // clean up local resources and navigate to the new video's detail page
@@ -339,7 +339,7 @@ const handleDeleteVideo = () => {
             mediaRecorder.start();
             setIsRecording(true);
 
-            console.log("Recording started");
+            // console.log("Recording started");
 
         } catch (error) {
             console.error(error);
