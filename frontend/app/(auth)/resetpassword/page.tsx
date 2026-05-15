@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { authApi } from "@/lib/api";
+import { toast } from "sonner";
 
 const getErrorMessage = (detail: unknown, fallback: string) => {
     if (typeof detail === "string" && detail.trim()) {
@@ -32,28 +33,28 @@ export default function ResetPasswordPage() {
 
     const handleSubmit = async () => {
         if (!token) {
-            alert("Reset token is missing. Please verify OTP again.");
+            toast.error("Reset token is missing. Please verify OTP again.");
             return;
         }
 
         if (!newPassword || !confirmPassword) {
-            alert("Please fill in both password fields");
+            toast.error("Please fill in both password fields");
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            alert("Passwords do not match");
+            toast.error("Passwords do not match");
             return;
         }
 
         try {
             setLoading(true);
             await authApi.resetPassword(token, newPassword, confirmPassword);
-            alert("Password reset successfully");
+            toast.success("Password reset successfully");
             router.push("/Login");
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : getErrorMessage(null, "Password reset failed");
-            alert(message);
+            toast.error(message);
         } finally {
             setLoading(false);
         }

@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 import { useAuth } from "@/lib/auth";
 import { ApiHistoryLog, ApiVideo, historyApi, videosApi } from "@/lib/api";
 import VideoList from "../../component/VideoList";
+import { toast } from "sonner";
 
 const PAGE_SIZE = 20;
 
@@ -122,7 +123,7 @@ export default function HistoryPage() {
             await historyApi.clear(token);
             await loadHistory(0, false);
         } catch (err) {
-            alert(err instanceof Error ? err.message : "Failed to clear history");
+            toast.error(err instanceof Error ? err.message : "Failed to clear history");
         } finally {
             setIsClearing(false);
         }

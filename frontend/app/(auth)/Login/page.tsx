@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api";
+import { toast } from "sonner";
 
 type GoogleCredentialResponse = {
     credential: string;
@@ -83,7 +84,7 @@ function LoginPage() {
     const handleGoogleCredential = useCallback(
         async (response: GoogleCredentialResponse) => {
             if (!response.credential) {
-                alert("Google credential is missing");
+                toast.error("Google credential is missing");
                 return;
             }
 
@@ -95,7 +96,7 @@ function LoginPage() {
                 router.push("/");
             } catch (err: unknown) {
                 const message = err instanceof Error ? err.message : getErrorMessage(null, "Google login failed");
-                alert(message);
+                toast.error(message);
             } finally {
                 setIsGoogleLoading(false);
             }
@@ -164,7 +165,7 @@ function LoginPage() {
 
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : getErrorMessage(null, "Login failed");
-            alert(message);
+            toast.error(message);
         } finally {
             setIsLoading(false);
         }
@@ -172,12 +173,12 @@ function LoginPage() {
 
     const handleGoogleLogin = () => {
         if (!googleClientId) {
-            alert("NEXT_PUBLIC_GOOGLE_CLIENT_ID is not configured");
+            toast.error("NEXT_PUBLIC_GOOGLE_CLIENT_ID is not configured");
             return;
         }
 
         if (!isGoogleReady || !window.google?.accounts?.id) {
-            alert("Google Sign-In is not ready yet");
+            toast.error("Google Sign-In is not ready yet");
             return;
         }
 

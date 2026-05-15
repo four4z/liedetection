@@ -9,7 +9,7 @@ const normalizeEnv = (value?: string) => {
 const s3Client = new S3Client({
     region: normalizeEnv(process.env.AWS_BUCKET_REGION) || 'ap-southeast-2',
     credentials: {
-        accessKeyId: normalizeEnv(process.env.AWS_ACCESS_KEY) || '',
+        accessKeyId: normalizeEnv(process.env.AWS_ACCESS_KEY_ID) || '',
         secretAccessKey: normalizeEnv(process.env.AWS_SECRET_ACCESS_KEY) || '',
     },
 });
@@ -17,7 +17,7 @@ const s3Client = new S3Client({
 export async function POST(request: NextRequest) {
     try {
         // Validate AWS configuration
-        if (!normalizeEnv(process.env.AWS_ACCESS_KEY) || !normalizeEnv(process.env.AWS_SECRET_ACCESS_KEY) || !normalizeEnv(process.env.AWS_BUCKET_NAME)) {
+        if (!normalizeEnv(process.env.AWS_ACCESS_KEY_ID) || !normalizeEnv(process.env.AWS_SECRET_ACCESS_KEY) || !normalizeEnv(process.env.AWS_BUCKET_NAME)) {
             return NextResponse.json(
                 { success: false, error: 'AWS configuration is missing' },
                 { status: 500 }

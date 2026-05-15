@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { authApi } from "@/lib/api";
+import { toast } from "sonner";
 
 const getErrorMessage = (detail: unknown, fallback: string) => {
     if (typeof detail === "string" && detail.trim()) {
@@ -79,7 +80,7 @@ export default function VerifyOtpPage() {
 
     const handleSubmit = async () => {
         if (!email.trim() || otpCode.length !== 6) {
-            alert("Please enter email and OTP");
+            toast.error("Please enter email and OTP");
             return;
         }
 
@@ -89,7 +90,7 @@ export default function VerifyOtpPage() {
             router.push(`/resetpassword?token=${encodeURIComponent(data.reset_token)}&email=${encodeURIComponent(email.trim())}`);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : getErrorMessage(null, "OTP verification failed");
-            alert(message);
+            toast.error(message);
         } finally {
             setLoading(false);
         }
@@ -97,17 +98,17 @@ export default function VerifyOtpPage() {
 
     const handleResend = async () => {
         if (!email.trim()) {
-            alert("Email is missing. Please go back and enter your email again.");
+            toast.error("Email is missing. Please go back and enter your email again.");
             return;
         }
 
         try {
             setResending(true);
             await authApi.requestPasswordReset(email.trim());
-            alert(`OTP sent again to ${email.trim()}`);
+            toast.success(`OTP sent again to ${email.trim()}`);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : getErrorMessage(null, "Failed to resend OTP");
-            alert(message);
+            toast.error(message);
         } finally {
             setResending(false);
         }

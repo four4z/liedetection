@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { videosApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function Main() {
     const [file, setFile] = useState<File | null>(null);
@@ -32,7 +33,7 @@ export default function Main() {
         const allowedTypes = ["video/mp4", "video/webm", "video/ogg", "video/quicktime"];
 
         if (!allowedTypes.includes(selectedFile.type)) {
-            alert("รองรับเฉพาะไฟล์วิดีโอ (.mp4, .webm, .ogg, .mov) เท่านั้น");
+            toast.error("รองรับเฉพาะไฟล์วิดีโอ (.mp4, .webm, .ogg, .mov) เท่านั้น");
             return;
         }
 
@@ -122,7 +123,7 @@ const handleDeleteVideo = () => {
             await videosApi.triggerAnalysis(backendData.id, token);
 
             console.log("Video submission successful:", backendData);
-            alert("วิดีโอถูกส่งและเริ่มวิเคราะห์แล้ว");
+            toast.success("วิดีโอถูกส่งและเริ่มวิเคราะห์แล้ว");
 
             // clean up local resources and navigate to the new video's detail page
             handleDeleteVideo();
@@ -130,7 +131,7 @@ const handleDeleteVideo = () => {
             
         } catch (error) {
             console.error("Error analyzing video:", error);
-            alert(`เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : "Unknown error"}`);
+            toast.error(`เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : "Unknown error"}`);
         } finally {
             setIsAnalyzing(false);
         }
@@ -258,7 +259,7 @@ const handleDeleteVideo = () => {
 
         } catch (error) {
             console.error(error);
-            alert("ไม่สามารถเข้าถึงกล้องได้");
+            toast.error("ไม่สามารถเข้าถึงกล้องได้");
         }
     };
 
