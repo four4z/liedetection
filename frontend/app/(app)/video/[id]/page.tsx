@@ -19,6 +19,7 @@ export default function VideoDetailPage() {
     const router = useRouter();
     const videoId = params.id as string;
     const videoRef = useRef<HTMLVideoElement>(null);
+    const pendingSeekRef = useRef<number | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
     const { token, isLoading: authLoading } = useAuth();
 
@@ -38,6 +39,36 @@ export default function VideoDetailPage() {
 
         return buildTimeWarpPoints(video);
     }, [video]);
+
+    const seekVideoToTimestamp = useCallback((timestamp: number) => {
+        const videoElement = videoRef.current;
+
+        if (!videoElement) {
+            return;
+        }
+
+        const seek = () => {
+            const safeTimestamp = Math.max(0, timestamp);
+
+            try {
+                if (typeof videoElement.fastSeek === "function") {
+                    videoElement.fastSeek(safeTimestamp);
+                } else {
+                    videoElement.currentTime = safeTimestamp;
+                }
+            } catch {
+                videoElement.currentTime = safeTimestamp;
+            }
+        };
+
+        if (videoElement.readyState < HTMLMediaElement.HAVE_METADATA) {
+            pendingSeekRef.current = timestamp;
+            return;
+        }
+
+        pendingSeekRef.current = null;
+        seek();
+    }, []);
 
     const fetchVideoDetail = useCallback(async (silent = false) => {
         try {
@@ -67,6 +98,35 @@ export default function VideoDetailPage() {
             void fetchVideoDetail(false);
         }
     }, [videoId, authLoading, fetchVideoDetail]);
+
+    useEffect(() => {
+        const videoElement = videoRef.current;
+
+        if (!videoElement) {
+            return;
+        }
+
+        const handleLoadedMetadata = () => {
+            if (pendingSeekRef.current === null) {
+                return;
+            }
+
+            const timestamp = pendingSeekRef.current;
+            pendingSeekRef.current = null;
+
+            if (typeof videoElement.fastSeek === "function") {
+                videoElement.fastSeek(Math.max(0, timestamp));
+            } else {
+                videoElement.currentTime = Math.max(0, timestamp);
+            }
+        };
+
+        videoElement.addEventListener("loadedmetadata", handleLoadedMetadata);
+
+        return () => {
+            videoElement.removeEventListener("loadedmetadata", handleLoadedMetadata);
+        };
+    }, [videoUrl]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -263,11 +323,7 @@ export default function VideoDetailPage() {
                     <div className="lg:[grid-area:1/6/8/8] min-h-75 lg:min-h-0 h-full">
                         <TimewarpTimeline
                             points={timewarpPoints}
-                            onPointClick={(timestamp) => {
-                                if (videoRef.current) {
-                                    videoRef.current.currentTime = timestamp;
-                                }
-                            }}
+                            onPointClick={seekVideoToTimestamp}
                         />
                     </div>
 

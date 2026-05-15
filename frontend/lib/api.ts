@@ -106,15 +106,39 @@ const normalizeConfidence = (score: number | null | undefined) => {
     return Math.max(0, Math.min(1, score));
 };
 
-const parseTimestampToSeconds = (timestamp: string) => {
-    const head = timestamp.split("-")[0]?.trim() || timestamp.trim();
+const extractTimeToken = (input: string) => {
+    // ตัดเอาเฉพาะตัวเลข + : + .
+    const cleaned = input.match(/[0-9:.]+/g);
+    if (!cleaned) return null;
 
-    if (!head) {
+    for (const token of cleaned) {
+        const parts = token.split(":");
+
+        // รองรับ H:M หรือ H:M:S
+        if (parts.length === 2 || parts.length === 3) {
+            if (parts.every((part) => !Number.isNaN(Number(part)))) {
+                return token;
+            }
+        }
+
+        // รองรับเลขธรรมดา เช่น 123 หรือ 123.45
+        if (!Number.isNaN(Number(token))) {
+            return token;
+        }
+    }
+
+    return null;
+};
+
+const parseTimestampToSeconds = (timestamp: string) => {
+    const token = extractTimeToken(timestamp);
+
+    if (!token) {
         return 0;
     }
 
-    if (head.includes(":")) {
-        const parts = head.split(":").map((part) => Number(part.trim()));
+    if (token.includes(":")) {
+        const parts = token.split(":").map((part) => Number(part.trim()));
 
         if (parts.every((part) => Number.isFinite(part))) {
             if (parts.length === 3) {
@@ -127,13 +151,8 @@ const parseTimestampToSeconds = (timestamp: string) => {
         }
     }
 
-    const numeric = Number(head);
-    if (Number.isFinite(numeric)) {
-        return numeric;
-    }
-
-    const parsed = Number.parseFloat(head);
-    return Number.isFinite(parsed) ? parsed : 0;
+    const numeric = Number(token);
+    return Number.isFinite(numeric) ? numeric : 0;
 };
 
 export const formatConfidencePercent = (score: number | null | undefined) => {
