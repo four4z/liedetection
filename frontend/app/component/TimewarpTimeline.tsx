@@ -93,7 +93,7 @@ export default function TimewarpTimeline({
     };
     return (
         <div
-            className="w-full h-full border border-greay-custom rounded-lg p-4 flex flex-col bg-greay-custom/50"
+            className="w-full h-full border border-greay-custom rounded-lg p-4 overflow-auto flex flex-col bg-greay-custom/50"
         >
 
             <div className="mb-4 flex items-center justify-between relative" ref={filterPopupRef}>
