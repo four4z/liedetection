@@ -9,6 +9,9 @@ export default function Toaster() {
       position="top-center"
       // closeButton
       theme="dark"
+      toastOptions={{
+        className: "text-center"
+      }}
     />
   );
 }
