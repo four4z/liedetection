@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { authApi } from "@/lib/api";
+import { toast } from "sonner";
 
 const getErrorMessage = (detail: unknown, fallback: string) => {
     if (typeof detail === "string" && detail.trim()) {
@@ -28,7 +29,7 @@ export default function ForgotPasswordPage() {
 
     const handleSubmit = async () => {
         if (!email.trim()) {
-            alert("Please enter your email");
+            toast.error("Please enter your email");
             return;
         }
 
@@ -38,7 +39,7 @@ export default function ForgotPasswordPage() {
             router.push(`/verifyotp?email=${encodeURIComponent(email.trim())}`);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : getErrorMessage(null, "Failed to send OTP");
-            alert(message);
+            toast.error(message);
         } finally {
             setLoading(false);
         }

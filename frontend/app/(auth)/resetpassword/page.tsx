@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { authApi } from "@/lib/api";
+import { toast } from "sonner";
 
 export const dynamic = "force-dynamic";
 
@@ -45,39 +46,28 @@ function ResetPasswordContent() {
 
     const handleSubmit = async () => {
         if (!token) {
-            alert("Reset token is missing. Please verify OTP again.");
+            toast.error("Reset token is missing. Please verify OTP again.");
             return;
         }
 
         if (!newPassword || !confirmPassword) {
-            alert("Please fill in both password fields");
+            toast.error("Please fill in both password fields");
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            alert("Passwords do not match");
+            toast.error("Passwords do not match");
             return;
         }
 
         try {
             setLoading(true);
-
-            await authApi.resetPassword(
-                token,
-                newPassword,
-                confirmPassword
-            );
-
-            alert("Password reset successfully");
-
+            await authApi.resetPassword(token, newPassword, confirmPassword);
+            toast.success("Password reset successfully");
             router.push("/Login");
         } catch (err: unknown) {
-            const message =
-                err instanceof Error
-                    ? err.message
-                    : getErrorMessage(null, "Password reset failed");
-
-            alert(message);
+            const message = err instanceof Error ? err.message : getErrorMessage(null, "Password reset failed");
+            toast.error(message);
         } finally {
             setLoading(false);
         }
@@ -87,8 +77,7 @@ function ResetPasswordContent() {
         <div className="flex justify-center items-center min-h-screen">
             <div className="min-h-screen flex items-center justify-center">
                 <div className="w-full max-w-sm bg-dark-custom border border-dark-custom rounded-3xl shadow-lg p-12 text-white">
-
-                    <Link href="/verifyotp" className="flex items-center mb-6">
+                    <Link href={email ? `/verifyotp?email=${encodeURIComponent(email)}` : "/verifyotp"} className="flex items-center mb-6">
                         <Icon icon="weui:back-outlined" width="12" height="24" />
                     </Link>
 

@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 import { useAuth } from "@/lib/auth";
 import { ApiHistoryLog, ApiVideo, historyApi, videosApi } from "@/lib/api";
 import VideoList from "../../component/VideoList";
+import { toast } from "sonner";
 
 const PAGE_SIZE = 20;
 
@@ -122,7 +123,7 @@ export default function HistoryPage() {
             await historyApi.clear(token);
             await loadHistory(0, false);
         } catch (err) {
-            alert(err instanceof Error ? err.message : "Failed to clear history");
+            toast.error(err instanceof Error ? err.message : "Failed to clear history");
         } finally {
             setIsClearing(false);
         }
@@ -135,13 +136,6 @@ export default function HistoryPage() {
                     <h1 className="text-xl sm:text-2xl font-bold text-white">History</h1>
                     <p className="text-gray-400 text-sm">ประวัติการเปิดวิดีโอของบัญชีนี้</p>
                 </div>
-                <button
-                    onClick={handleClear}
-                    disabled={!token || logs.length === 0 || isClearing}
-                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
-                >
-                    <Icon icon="mdi:trash" width="24" height="24" />
-                </button>
             </div>
 
             {loading && (

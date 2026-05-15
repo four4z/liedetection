@@ -200,6 +200,26 @@ html,
   );
 }
 
+/* Sonner toast customizations: dark rounded design */
+[data-sonner-toaster] [data-sonner-toast] {
+  border-radius: 12px;
+  background: rgba(20, 23, 28, 0.95) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  color: #e6eef8 !important;
+  box-shadow: 0 6px 24px rgba(2,6,23,0.6) !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast] [data-description] {
+  color: #bfc9d8 !important;
+}
+
+[data-sonner-toaster] [data-close-button] {
+  background: transparent !important;
+  border: none !important;
+  color: #9aa6bf !important;
+}
+
+
 *::-webkit-scrollbar-thumb:active {
   background: rgba(148, 163, 184, 0.95);
 }

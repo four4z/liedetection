@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api";
+import { toast } from "sonner";
 
 const getErrorMessage = (detail: unknown, fallback: string) => {
     if (typeof detail === "string" && detail.trim()) {
@@ -57,12 +58,12 @@ function RegisterPage() {
 
     const handleRegister = async () => {
         if (!email || !username || !password || !confirmPassword) {
-            alert("Please fill in all fields");
+            toast.error("Please fill in all fields");
             return;
         }
 
         if (password !== confirmPassword) {
-            alert("Passwords do not match");
+            toast.error("Passwords do not match");
             return;
         }
 
@@ -70,7 +71,6 @@ function RegisterPage() {
             setLoading(true);
             const data = await authApi.register(email, username, password);
             const meData = await authApi.me(data.access_token);
-            console.log("USER:", meData);
 
             // ✅ เก็บ token และ user ใน context
             login(data.access_token, meData);
@@ -79,7 +79,7 @@ function RegisterPage() {
             router.push("/");
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : getErrorMessage(null, "Register failed");
-            alert(message);
+            toast.error(message);
         } finally {
             setLoading(false);
         }

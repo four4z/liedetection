@@ -49,14 +49,16 @@ export default function Sidebar({ children }: SidebarProps) {
             icon: "mdi:home",
         },
         {
-            label: "List",
+            label: "Video List",
             href: "/list",
             icon: "lucide:list-video",
+            requiresAuth: true,
         },
         {
-            label: "History",
+            label: "History Log",
             href: "/history",
             icon: "mdi:history",
+            requiresAuth: true,
         },
     ];
 
@@ -89,30 +91,46 @@ export default function Sidebar({ children }: SidebarProps) {
             </div>
 
             <nav className="flex-1 px-3 py-6 space-y-3">
-                {menuItems.map((item) => (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={closeMobileMenu}
-                        className={`flex items-center gap-4 px-3 py-3 rounded-lg transition-colors duration-200 ${isActive(item.href)
-                            ? "bg-greay-custom text-white"
-                            : "hover:bg-slate-700"
-                            }`}
-                        title={!isOpen ? item.label : ""}
-                    >
-                        <Icon
-                            icon={item.icon}
-                            width="24"
-                            height="24"
-                            className="shrink-0"
-                        />
-                        {isOpen && (
-                            <span className="whitespace-nowrap text-sm font-medium">
-                                {item.label}
-                            </span>
-                        )}
-                    </Link>
-                ))}
+                {menuItems.map((item) => {
+                    const isDisabled = (item as any).requiresAuth && !user;
+                    const baseClass = `flex items-center gap-4 px-3 py-3 rounded-lg transition-colors duration-200`;
+
+                    if (isDisabled) {
+                        return (
+                            <div
+                                key={item.href}
+                                className={`${baseClass} opacity-50 cursor-not-allowed text-gray-300`}
+                                title="Login to access"
+                                aria-disabled={true}
+                                tabIndex={-1}
+                            >
+                                <Icon icon={item.icon} width="24" height="24" className="shrink-0" />
+                                {isOpen && (
+                                    <span className="whitespace-nowrap text-sm font-medium">
+                                        {item.label}
+                                    </span>
+                                )}
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={closeMobileMenu}
+                            className={`${baseClass} ${isActive(item.href) ? "bg-greay-custom text-white" : "hover:bg-slate-700"}`}
+                            title={!isOpen ? item.label : ""}
+                        >
+                            <Icon icon={item.icon} width="24" height="24" className="shrink-0" />
+                            {isOpen && (
+                                <span className="whitespace-nowrap text-sm font-medium">
+                                    {item.label}
+                                </span>
+                            )}
+                        </Link>
+                    );
+                })}
             </nav>
 
             <div className="border-t border-greay-custom p-4">

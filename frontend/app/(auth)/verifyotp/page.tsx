@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { authApi } from "@/lib/api";
+import { toast } from "sonner";
 
 export const dynamic = "force-dynamic";
 
@@ -36,28 +37,90 @@ function VerifyOtpContent() {
     const router = useRouter();
     const initialEmail = getSearchParam(searchParams.get("email"));
     const [email, setEmail] = useState(initialEmail);
-    const [otp, setOtp] = useState("");
+    const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
     const [loading, setLoading] = useState(false);
+    const [resending, setResending] = useState(false);
+    const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
     useEffect(() => {
         setEmail(initialEmail);
     }, [initialEmail]);
 
+    const otpCode = otpDigits.join("");
+
+    const focusOtpInput = (index: number) => {
+        otpInputRefs.current[index]?.focus();
+    };
+
+    const handleOtpChange = (index: number, value: string) => {
+        const nextDigit = value.replace(/\D/g, "").slice(-1);
+
+        setOtpDigits((current) => {
+            const nextDigits = [...current];
+            nextDigits[index] = nextDigit;
+            return nextDigits;
+        });
+
+        if (nextDigit && index < otpInputRefs.current.length - 1) {
+            focusOtpInput(index + 1);
+        }
+    };
+
+    const handleOtpKeyDown = (index: number, event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === "Backspace" && !otpDigits[index] && index > 0) {
+            focusOtpInput(index - 1);
+        }
+    };
+
+    const handleOtpPaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
+        const pastedValue = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+
+        if (!pastedValue) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const nextDigits = Array.from({ length: 6 }, (_, index) => pastedValue[index] || "");
+        setOtpDigits(nextDigits);
+
+        const nextFocusIndex = Math.min(pastedValue.length, 5);
+        focusOtpInput(nextFocusIndex);
+    };
+
     const handleSubmit = async () => {
-        if (!email.trim() || !otp.trim()) {
-            alert("Please enter email and OTP");
+        if (!email.trim() || otpCode.length !== 6) {
+            toast.error("Please enter email and OTP");
             return;
         }
 
         try {
             setLoading(true);
-            const data = await authApi.verifyPasswordResetOtp(email.trim(), otp.trim());
+            const data = await authApi.verifyPasswordResetOtp(email.trim(), otpCode);
             router.push(`/resetpassword?token=${encodeURIComponent(data.reset_token)}&email=${encodeURIComponent(email.trim())}`);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : getErrorMessage(null, "OTP verification failed");
-            alert(message);
+            toast.error(message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleResend = async () => {
+        if (!email.trim()) {
+            toast.error("Email is missing. Please go back and enter your email again.");
+            return;
+        }
+
+        try {
+            setResending(true);
+            await authApi.requestPasswordReset(email.trim());
+            toast.success(`OTP sent again to ${email.trim()}`);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : getErrorMessage(null, "Failed to resend OTP");
+            toast.error(message);
+        } finally {
+            setResending(false);
         }
     };
 
@@ -87,22 +150,32 @@ function VerifyOtpContent() {
                                 type="email"
                                 placeholder="Email"
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="mt-1 w-full rounded-xl bg-white/10 border border-white/20 px-4 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/30"
+                                readOnly
+                                className="mt-1 w-full rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm text-white/80 placeholder-white/40 focus:outline-none"
                             />
                         </div>
 
                         <div>
                             <label className="text-sm text-white/70">OTP</label>
-                            <input
-                                type="text"
-                                inputMode="numeric"
-                                maxLength={6}
-                                placeholder="6-digit code"
-                                value={otp}
-                                onChange={(e) => setOtp(e.target.value)}
-                                className="mt-1 w-full rounded-xl bg-white/10 border border-white/20 px-4 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/30 tracking-[0.4em] text-center"
-                            />
+                            <div className="mt-2 flex gap-2">
+                                {otpDigits.map((digit, index) => (
+                                    <input
+                                        key={index}
+                                        ref={(element) => {
+                                            otpInputRefs.current[index] = element;
+                                        }}
+                                        type="text"
+                                        inputMode="numeric"
+                                        autoComplete="one-time-code"
+                                        maxLength={1}
+                                        value={digit}
+                                        onChange={(event) => handleOtpChange(index, event.target.value)}
+                                        onKeyDown={(event) => handleOtpKeyDown(index, event)}
+                                        onPaste={handleOtpPaste}
+                                        className="h-11 w-10 rounded-xl border border-white/20 bg-white/10 text-center text-lg font-semibold text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/30"
+                                    />
+                                ))}
+                            </div>
                         </div>
 
                         <button
@@ -112,13 +185,15 @@ function VerifyOtpContent() {
                         >
                             {loading ? "Verifying..." : "Verify OTP"}
                         </button>
+
                     </div>
 
-                    <p className="mt-6 text-center text-sm text-white/60">
+
+                    <p className="flex gap-2 justify-center mt-6 text-center text-sm text-white/60">
                         Need a new code?{" "}
-                        <Link href="/forgetpassword" className="text-blue-400 hover:underline cursor-pointer">
+                        <div onClick={handleResend} className="text-blue-400 hover:underline cursor-pointer">
                             Resend
-                        </Link>
+                        </div>
                     </p>
                 </div>
             </div>
