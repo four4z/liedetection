@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const normalizeEnv = (value?: string) => {
     if (!value) return '';
     return value.replace(/^['"]|['"]$/g, '');
 };
+
+const allowedVideoTypes = new Set(['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime']);
 
 const s3Client = new S3Client({
     region: normalizeEnv(process.env.AWS_BUCKET_REGION) || 'ap-southeast-2',
@@ -24,40 +27,45 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const data = await request.formData();
-        const file: File | null = data.get('file') as unknown as File;
+        const body = await request.json();
+        const fileName = typeof body?.fileName === 'string' ? body.fileName.trim() : '';
+        const contentType = typeof body?.contentType === 'string' ? body.contentType.trim() : '';
 
-        if (!file) {
+        if (!fileName || !contentType) {
             return NextResponse.json(
-                { success: false, error: 'No file provided' },
+                { success: false, error: 'fileName and contentType are required' },
                 { status: 400 }
             );
         }
 
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '-')}`;
+        if (!allowedVideoTypes.has(contentType)) {
+            return NextResponse.json(
+                { success: false, error: 'Unsupported video type' },
+                { status: 400 }
+            );
+        }
 
-        // Upload to S3
+        const safeName = fileName.replace(/[^a-zA-Z0-9.-]/g, '-');
+        const objectKey = `${Date.now()}-${safeName}`;
+
         const command = new PutObjectCommand({
             Bucket: normalizeEnv(process.env.AWS_BUCKET_NAME),
-            Key: fileName,
-            Body: buffer,
-            ContentType: file.type,
+            Key: objectKey,
+            ContentType: contentType,
             ACL: 'public-read', // Make file publicly accessible
         });
 
-        await s3Client.send(command);
+        const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
 
-        // Generate S3 URL
-        const s3Url = `https://${normalizeEnv(process.env.AWS_BUCKET_NAME)}.s3.${normalizeEnv(process.env.AWS_BUCKET_REGION) || 'ap-southeast-2'}.amazonaws.com/${fileName}`;
+        const s3Url = `https://${normalizeEnv(process.env.AWS_BUCKET_NAME)}.s3.${normalizeEnv(process.env.AWS_BUCKET_REGION) || 'ap-southeast-2'}.amazonaws.com/${objectKey}`;
 
-        console.log(`File uploaded to S3: ${s3Url}`);
+        console.log(`Issued presigned upload URL for S3 object: ${s3Url}`);
 
         return NextResponse.json({
             success: true,
+            uploadUrl,
             videoUrl: s3Url,
-            fileName: fileName
+            fileName: objectKey
         });
     } catch (error) {
         console.error('Error uploading to S3:', error);

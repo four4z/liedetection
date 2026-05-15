@@ -71,6 +71,13 @@ export interface ApiVideoUploadResponse {
     sessionToken?: string | null;
 }
 
+export interface ApiVideoUploadUrlResponse {
+    success: boolean;
+    uploadUrl: string;
+    videoUrl: string;
+    fileName: string;
+}
+
 export interface ApiHistoryLog {
     id: string;
     userId: string;
@@ -294,6 +301,12 @@ export const authApi = {
 };
 
 export const videosApi = {
+    getUploadUrl: (fileName: string, contentType: string) =>
+        apiRequest<ApiVideoUploadUrlResponse>('/api/upload', {
+            method: 'POST',
+            body: { fileName, contentType },
+        }),
+
     listMine: (token: string, skip = 0, limit = 20) =>
         apiRequest<ApiVideo[]>(`/api/videos/?skip=${skip}&limit=${limit}`, {
             token,

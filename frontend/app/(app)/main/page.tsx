@@ -109,29 +109,29 @@ const handleDeleteVideo = () => {
 
         setIsAnalyzing(true);
         try {
-            // Step 1: Upload video to S3
-            console.log("Uploading video to S3:", file.name);
-            const formData = new FormData();
-            formData.append("file", file);
+            // Step 1: Ask the app for a presigned S3 upload URL.
+            console.log("Requesting presigned upload URL for:", file.name);
+            const uploadData = await videosApi.getUploadUrl(file.name, file.type);
 
-            const uploadResponse = await fetch("/api/upload", {
-                method: "POST",
-                body: formData,
+            // Step 2: Upload the file directly from the browser to S3.
+            const uploadResponse = await fetch(uploadData.uploadUrl, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": file.type,
+                    "x-amz-acl": "public-read",
+                },
+                body: file,
             });
 
             if (!uploadResponse.ok) {
-                const error = await uploadResponse.json();
-                throw new Error(error.error || "Failed to upload video to S3");
+                throw new Error(`Failed to upload video to S3 (${uploadResponse.status})`);
             }
 
-            const uploadData = await uploadResponse.json();
-            const s3VideoUrl = uploadData.videoUrl;
+            console.log("Video uploaded to S3:", uploadData.videoUrl);
 
-            console.log("Video uploaded to S3:", s3VideoUrl);
-
-            // Step 2: Submit video URL to backend and trigger analysis.
+            // Step 3: Submit video URL to backend and trigger analysis.
             const resolvedTitle = videoTitle.trim() || getDefaultTitle(file.name);
-            const backendData = await videosApi.uploadLink(s3VideoUrl, resolvedTitle, token);
+            const backendData = await videosApi.uploadLink(uploadData.videoUrl, resolvedTitle, token);
             await videosApi.triggerAnalysis(backendData.id, token);
 
             console.log("Video submission successful:", backendData);
