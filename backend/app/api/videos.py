@@ -65,6 +65,14 @@ def _require_valid_id(video_id: str) -> None:
         raise HTTPException(status_code=400, detail=f"Invalid video ID: '{video_id}'")
 
 
+async def _require_unique_name(videos_col, user_id: str, name: str, exclude_id: Optional[str] = None) -> None:
+    query = {"user_id": user_id, "video": name}
+    if exclude_id:
+        query["_id"] = {"$ne": ObjectId(exclude_id)}
+    if await videos_col.find_one(query, {"_id": 1}):
+        raise HTTPException(status_code=409, detail=f"You already have a video named '{name}'")
+
+
 async def _run_analysis(video_id: str) -> None:
     """Wrapper that catches unhandled errors from analyze_video and stores the reason."""
     try:
@@ -111,6 +119,10 @@ async def upload_video(
     session_token = str(uuid.uuid4()) if is_anonymous else None
     video_name = video_data.video or video_data.video_url.rsplit("/", 1)[-1]
 
+    videos = get_videos_collection()
+    if not is_anonymous:
+        await _require_unique_name(videos, str(current_user["_id"]), video_name)
+
     video_doc = {
         "user_id": str(current_user["_id"]) if current_user else None,
         "session_token": session_token,
@@ -130,7 +142,6 @@ async def upload_video(
     if is_anonymous:
         video_doc["expireAt"] = datetime.utcnow() + timedelta(days=ANONYMOUS_VIDEO_TTL_DAYS)
 
-    videos = get_videos_collection()
     result = await videos.insert_one(video_doc)
 
     return VideoUpload(
@@ -184,6 +195,7 @@ async def rename_video(video_id: str, body: VideoRename, current_user: dict = De
     if video.get("user_id") != str(current_user["_id"]):
         raise HTTPException(status_code=403, detail="Not authorized to rename this video")
 
+    await _require_unique_name(videos, str(current_user["_id"]), body.video, exclude_id=video_id)
     await videos.update_one({"_id": ObjectId(video_id)}, {"$set": {"video": body.video}})
     video["video"] = body.video
     return _build_list_item(video)
