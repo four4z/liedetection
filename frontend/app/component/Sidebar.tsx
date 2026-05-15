@@ -49,7 +49,7 @@ export default function Sidebar({ children }: SidebarProps) {
             icon: "mdi:home",
         },
         {
-            label: "VideoList",
+            label: "Video List",
             href: "/list",
             icon: "lucide:list-video",
         },

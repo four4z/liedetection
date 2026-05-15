@@ -6,6 +6,11 @@ import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+interface MediaDeviceInfo {
+    deviceId: string;
+    label: string;
+}
+
 export default function Main() {
     const [file, setFile] = useState<File | null>(null);
     const [videoTitle, setVideoTitle] = useState("");
@@ -14,10 +19,17 @@ export default function Main() {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
+    const [showCameraModal, setShowCameraModal] = useState(false);
+    const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
+    const [selectedCameraId, setSelectedCameraId] = useState<string>("");
+    const [audioLevel, setAudioLevel] = useState(0);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const recordingStreamRef = useRef<MediaStream | null>(null);
     const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const analyserRef = useRef<AnalyserNode | null>(null);
+    const animationFrameRef = useRef<number | null>(null);
     const log = (...args: any[]) => console.debug("[Recorder]", ...args);
     const { token } = useAuth();
     const router = useRouter();
@@ -137,17 +149,86 @@ const handleDeleteVideo = () => {
         }
     };
 
-    const startRecording = async () => {
+    const enumerateCameras = async () => {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            
+            if (videoDevices.length === 0) {
+                toast.error("ไม่พบกล้องบนอุปกรณ์นี้");
+                return;
+            }
+
+            const cameras: MediaDeviceInfo[] = videoDevices.map(device => ({
+                deviceId: device.deviceId,
+                label: device.label || `Camera ${videoDevices.indexOf(device) + 1}`,
+            }));
+
+            setAvailableCameras(cameras);
+            setSelectedCameraId(cameras[0].deviceId);
+            setShowCameraModal(true);
+        } catch (error) {
+            console.error("Error enumerating cameras:", error);
+            toast.error("ไม่สามารถค้นหากล้องได้");
+        }
+    };
+
+    const startAudioLevelMonitoring = (stream: MediaStream) => {
+        try {
+            if (!audioContextRef.current) {
+                audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+            }
+            const audioContext = audioContextRef.current;
+
+            if (!analyserRef.current) {
+                analyserRef.current = audioContext.createAnalyser();
+            }
+            const analyser = analyserRef.current;
+            analyser.fftSize = 256;
+
+            const source = audioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
+
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+            const updateLevel = () => {
+                analyser.getByteFrequencyData(dataArray);
+                const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                setAudioLevel(average);
+                animationFrameRef.current = requestAnimationFrame(updateLevel);
+            };
+
+            updateLevel();
+        } catch (error) {
+            console.error("Error setting up audio monitoring:", error);
+        }
+    };
+
+    const stopAudioLevelMonitoring = () => {
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+        }
+        setAudioLevel(0);
+    };
+
+    const startRecording = async (cameraId?: string) => {
         try {
 
             setVideoUrl(undefined);
             setRecordedUrl(null);
             setVideoTitle("");
+            setShowCameraModal(false);
 
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: true,
+            const constraints: any = {
+                video: cameraId ? { deviceId: { exact: cameraId } } : true,
                 audio: true,
-            });
+            };
+
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            
+            // Start audio level monitoring
+            startAudioLevelMonitoring(stream);
 
             streamRef.current = stream;
             log("getUserMedia -> stream", stream.id, stream.getTracks().map(t => ({ id: t.id, kind: t.kind })) );
@@ -264,6 +345,7 @@ const handleDeleteVideo = () => {
     };
 
 const stopRecording = () => {
+    stopAudioLevelMonitoring();
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
         mediaRecorderRef.current.stop();
     }
@@ -273,6 +355,7 @@ const stopRecording = () => {
 useEffect(() => {
     return () => {
         try {
+            stopAudioLevelMonitoring();
             if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
                 mediaRecorderRef.current.stop();
             }
@@ -285,6 +368,11 @@ useEffect(() => {
             if (streamRef.current) {
                 streamRef.current.getTracks().forEach(t => t.stop());
                 streamRef.current = null;
+            }
+
+            if (audioContextRef.current) {
+                audioContextRef.current.close();
+                audioContextRef.current = null;
             }
         } catch (e) {
             // ignore cleanup errors
@@ -329,7 +417,7 @@ useEffect(() => {
                                     <button
                                         onClick={stopRecording}
                                         aria-label="Stop recording"
-                                        className="relative flex h-20 w-20 items-center justify-center rounded-full bg-rose-600 text-white shadow-[0_0_0_8px_rgba(244,63,94,0.12)] transition-transform duration-200 hover:scale-105 active:scale-95"
+                                        className="relative cursor-pointer flex h-20 w-20 items-center justify-center rounded-full bg-rose-600 text-white shadow-[0_0_0_8px_rgba(244,63,94,0.12)] transition-transform duration-200 hover:scale-105 active:scale-95"
                                     >
                                         <Icon icon="mdi:stop" width="34" height="34" />
                                     </button>
@@ -337,6 +425,33 @@ useEffect(() => {
                                 <div className="text-center">
                                     <p className="text-xl font-semibold text-slate-100">Recording...</p>
                                     <p className="mt-1 text-sm text-slate-400">กดปุ่มวงกลมเพื่อหยุดอัด</p>
+                                    
+                                    {/* Microphone Audio Indicator */}
+                                    <div className="mt-6 flex flex-col items-center gap-3">
+                                        <div className="flex items-center justify-center gap-1">
+                                            {[...Array(5)].map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="w-1.5 rounded-full bg-green-500 transition-all duration-75"
+                                                    style={{
+                                                        height: `${Math.max(8, (audioLevel / 255) * 32 * (1 - i * 0.15))}px`,
+                                                        opacity: audioLevel > 10 ? 1 : 0.4,
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <Icon
+                                                icon="mdi:microphone"
+                                                width="20"
+                                                height="20"
+                                                className={audioLevel > 20 ? "text-green-400" : "text-slate-400"}
+                                            />
+                                            <span className="text-xs font-medium text-slate-300">
+                                                {audioLevel > 20 ? "เสียงที่ตรวจพบ" : "รอเสียง..."}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         ) : (
@@ -369,8 +484,8 @@ useEffect(() => {
                                     </label>
 
                                     <button
-                                        onClick={startRecording}
-                                        className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2 rounded-md font-semibold shadow-md transition"
+                                        onClick={enumerateCameras}
+                                        className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2 cursor-pointer rounded-md font-semibold shadow-md transition"
                                     >
                                         <Icon icon="mdi:video-plus" width="20" height="20" className="inline mr-2" />
                                         Record Video
@@ -445,6 +560,65 @@ useEffect(() => {
 
                     </div>
                 )}
+
+            {/* Camera Selection Modal */}
+            {showCameraModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="rounded-2xl  bg-greay-custom p-6 shadow-2xl max-w-sm w-full mx-4">
+                        <div className="mb-6">
+                            <h2 className="text-xl font-bold text-white mb-2">เลือกกล้อง</h2>
+                            <p className="text-sm text-slate-400">เลือกกล้องที่คุณต้องการใช้ในการบันทึก</p>
+                        </div>
+
+                        {/* Camera Selection */}
+                        <div className="mb-6 space-y-2">
+                            {availableCameras.length > 0 ? (
+                                availableCameras.map((camera) => (
+                                    <label key={camera.deviceId} className="flex items-center gap-3 p-3 rounded-lg  bg-black/30  cursor-pointer hover:bg-black/20  transition">
+                                        <input
+                                            type="radio"
+                                            name="camera"
+                                            value={camera.deviceId}
+                                            checked={selectedCameraId === camera.deviceId}
+                                            onChange={(e) => setSelectedCameraId(e.target.value)}
+                                            className="w-4 h-4"
+                                        />
+                                        <span className="text-sm text-slate-200">{camera.label}</span>
+                                    </label>
+                                ))
+                            ) : (
+                                <p className="text-sm text-slate-400">ไม่พบกล้องที่ใช้ได้</p>
+                            )}
+                        </div>
+
+                        {/* Confirmation Message */}
+                        <div className="mb-6 p-3 rounded-lg bg-black/30 ">
+                            <p className="text-xs text-slate-300">
+                                <Icon icon="mdi:information-outline" className="inline mr-2" width="16" height="16" />
+                                เมื่อคุณคลิก "เริ่มบันทึก" การบันทึกวิดีโอจะเริ่มต้นขึ้น
+                            </p>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowCameraModal(false)}
+                                className="flex-1 px-4 py-2.5 rounded-lg  bg-gray-700/50 hover:bg-gray-700 text-slate-200 font-semibold text-sm transition"
+                            >
+                                ยกเลิก
+                            </button>
+                            <button
+                                onClick={() => startRecording(selectedCameraId)}
+                                disabled={!selectedCameraId}
+                                className="flex-1 px-4 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm transition disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            >
+                                <Icon icon="mdi:record-circle" className="inline mr-2" width="16" height="16" />
+                                เริ่มบันทึก
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             </div>
         </div>
     );

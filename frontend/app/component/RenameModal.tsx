@@ -62,7 +62,7 @@ export default function RenameModal({
             />
 
             {/* Modal */}
-            <div className="relative z-10 w-full max-w-md mx-4 rounded-lg border border-dark-custom bg-greay-custom p-6 shadow-xl">
+            <div className="relative z-10 w-full max-w-md mx-4 rounded-lg  bg-greay-custom p-6 shadow-xl">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-semibold text-white flex items-center gap-2">
@@ -93,7 +93,7 @@ export default function RenameModal({
                             onKeyDown={handleKeyDown}
                             disabled={isLoading}
                             placeholder="Enter new video title"
-                            className="w-full px-3 py-2 rounded-lg bg-black/30 border border-dark-custom text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50"
+                            className="w-full px-3 py-2 rounded-lg bg-black/30  text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50"
                             autoFocus
                         />
                     </div>
