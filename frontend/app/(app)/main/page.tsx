@@ -43,10 +43,10 @@ export default function Main() {
             URL.revokeObjectURL(videoUrl);
         }
 
-        const allowedTypes = ["video/mp4", "video/webm", "video/ogg", "video/quicktime"];
+        const allowedTypes = ["video/mp4", "video/webm", "video/quicktime"];
 
         if (!allowedTypes.includes(selectedFile.type)) {
-            toast.error("รองรับเฉพาะไฟล์วิดีโอ (.mp4, .webm, .ogg, .mov) เท่านั้น");
+            toast.error("รองรับเฉพาะไฟล์วิดีโอ (.mp4, .webm, .mov) เท่านั้น");
             return;
         }
 
@@ -537,7 +537,7 @@ useEffect(() => {
                                 </div>
 
                                 <p className="text-sm text-slate-400">
-                                    Supports .mp4, .webm, .ogg, and .mov formats
+                                    Supports .mp4, .webm, and .mov formats
                                 </p>
                             </>
                         )}
