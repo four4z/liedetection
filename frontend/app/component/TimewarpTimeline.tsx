@@ -54,12 +54,6 @@ export default function TimewarpTimeline({
         return "text-green-500";
     };
 
-    const getConfidenceBgColor = (confidence: number) => {
-        if (confidence >= 0.8) return "bg-red-500/20 ";
-        if (confidence >= 0.6) return "bg-yellow-500/20 ";
-        return "bg-green-500/20 border-green-500/50";
-    };
-
     const getPointFilterType = (point: TimeWarpPoint): Exclude<FilterType, "all"> => {
         const normalizedLabel = point.label.trim().toLowerCase();
 
@@ -181,9 +175,7 @@ export default function TimewarpTimeline({
                         <div
                             key={point.id}
                             onClick={() => handlePointClick(point.timestamp)}
-                            className={`rounded-lg border border-gray-700 bg-black/20 p-4 transition-all cursor-pointer ${getConfidenceBgColor(
-                                point.confidence
-                            )} hover:bg-gray-700/50`}
+                            className="rounded-lg border border-gray-700 bg-black/20 p-4 transition-all cursor-pointer hover:bg-gray-700/50"
                         >
 
                             <div className="flex flex-col gap-4 lg:flex-row lg:items-start">

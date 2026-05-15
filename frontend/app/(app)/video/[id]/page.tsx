@@ -228,43 +228,43 @@ export default function VideoDetailPage() {
                         {getVideoTitle(video)}
                     </h1>
                     {/* 3-dot Action Menu */}
-                <div ref={menuRef} className="relative">
-                    <button
-                        onClick={() => setShowActionMenu((prev) => !prev)}
-                        disabled={isDeleting || isRenaming}
-                        className="flex items-center justify-center w-8 h-8 rounded  text-gray-400 hover:text-gray-200 transition-colors disabled:opacity-50"
-                        title="More actions"
-                    >
-                        <Icon icon="mdi:dots-vertical" width="18" height="18" />
-                    </button>
+                    <div ref={menuRef} className="relative">
+                        <button
+                            onClick={() => setShowActionMenu((prev) => !prev)}
+                            disabled={isDeleting || isRenaming}
+                            className="flex items-center justify-center w-8 h-8 rounded  text-gray-400 hover:text-gray-200 transition-colors disabled:opacity-50"
+                            title="More actions"
+                        >
+                            <Icon icon="mdi:dots-vertical" width="18" height="18" />
+                        </button>
 
-                    {showActionMenu && (
-                        <div className="absolute left-0 top-10 z-30 w-40 rounded-md border border-[#2a2a2a] bg-[#111111] shadow-lg overflow-hidden">
-                            <button
-                                onClick={() => {
-                                    setShowActionMenu(false);
-                                    setShowRenameModal(true);
-                                }}
-                                disabled={isRenaming || isDeleting}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-200 hover:bg-[#1e1e1e] transition-colors disabled:opacity-50"
-                            >
-                                <Icon icon="mdi:pencil" width="16" height="16" />
-                                <span>Rename</span>
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setShowActionMenu(false);
-                                    void handleDelete();
-                                }}
-                                disabled={isDeleting || isRenaming}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-900/20 transition-colors disabled:opacity-50"
-                            >
-                                <Icon icon="mdi:trash" width="16" height="16" />
-                                <span>{isDeleting ? "Deleting..." : "Delete"}</span>
-                            </button>
-                        </div>
-                    )}
-                </div>
+                        {showActionMenu && (
+                            <div className="absolute left-0 top-10 z-30 w-40 rounded-md border border-[#2a2a2a] bg-[#111111] shadow-lg overflow-hidden">
+                                <button
+                                    onClick={() => {
+                                        setShowActionMenu(false);
+                                        setShowRenameModal(true);
+                                    }}
+                                    disabled={isRenaming || isDeleting}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-200 hover:bg-[#1e1e1e] transition-colors disabled:opacity-50"
+                                >
+                                    <Icon icon="mdi:pencil" width="16" height="16" />
+                                    <span>Rename</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowActionMenu(false);
+                                        void handleDelete();
+                                    }}
+                                    disabled={isDeleting || isRenaming}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-900/20 transition-colors disabled:opacity-50"
+                                >
+                                    <Icon icon="mdi:trash" width="16" height="16" />
+                                    <span>{isDeleting ? "Deleting..." : "Delete"}</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Date & Time Badge */}
@@ -284,7 +284,7 @@ export default function VideoDetailPage() {
                     </span>
                 </div>
 
-                
+
 
             </div>
 
@@ -298,6 +298,7 @@ export default function VideoDetailPage() {
                                 <video
                                     ref={videoRef}
                                     controls
+                                    controlsList="nodownload"
                                     className="w-full h-full object-contain"
                                     src={videoUrl}
                                     poster={video.thumbnail_url || undefined}
@@ -359,7 +360,7 @@ export default function VideoDetailPage() {
                                     </p>
                                 </div>
 
-                                
+
                             </div>
                         </div>
 
