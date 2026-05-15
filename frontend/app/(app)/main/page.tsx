@@ -27,6 +27,7 @@ export default function Main() {
     const streamRef = useRef<MediaStream | null>(null);
     const recordingStreamRef = useRef<MediaStream | null>(null);
     const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
+    const cameraPreviewRef = useRef<HTMLVideoElement | null>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
     const analyserRef = useRef<AnalyserNode | null>(null);
     const animationFrameRef = useRef<number | null>(null);
@@ -353,6 +354,47 @@ const stopRecording = () => {
     }
 };
 
+// Manage camera preview while the selection modal is open
+useEffect(() => {
+    let previewStream: MediaStream | null = null;
+
+    const startPreview = async () => {
+        try {
+            if (!showCameraModal) return;
+
+            const deviceId = selectedCameraId || (availableCameras[0] && availableCameras[0].deviceId) || undefined;
+            const constraints: any = {
+                video: deviceId ? { deviceId: { exact: deviceId } } : true,
+                audio: false,
+            };
+
+            previewStream = await navigator.mediaDevices.getUserMedia(constraints);
+            if (cameraPreviewRef.current) {
+                cameraPreviewRef.current.muted = true;
+                cameraPreviewRef.current.playsInline = true;
+                cameraPreviewRef.current.srcObject = previewStream;
+                try { await cameraPreviewRef.current.play(); } catch { /* ignore */ }
+            }
+        } catch (err) {
+            console.warn('Camera preview unavailable', err);
+        }
+    };
+
+    if (showCameraModal) {
+        startPreview();
+    }
+
+    return () => {
+        if (previewStream) {
+            previewStream.getTracks().forEach(t => t.stop());
+            previewStream = null;
+        }
+        if (cameraPreviewRef.current) {
+            try { cameraPreviewRef.current.srcObject = null; } catch {}
+        }
+    };
+}, [showCameraModal, selectedCameraId, availableCameras]);
+
 // Cleanup on unmount: stop any open streams and recording.
 useEffect(() => {
     return () => {
@@ -566,32 +608,38 @@ useEffect(() => {
             {/* Camera Selection Modal */}
             {showCameraModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="rounded-2xl  bg-greay-custom p-6 shadow-2xl max-w-sm w-full mx-4">
+                    <div className="rounded-2xl  bg-greay-custom p-6 shadow-2xl max-w-3xl w-full mx-4">
                         <div className="mb-6">
                             <h2 className="text-xl font-bold text-white mb-2">เลือกกล้อง</h2>
                             <p className="text-sm text-slate-400">เลือกกล้องที่คุณต้องการใช้ในการบันทึก</p>
                         </div>
 
-                        {/* Camera Selection */}
-                        <div className="mb-6 space-y-2">
-                            {availableCameras.length > 0 ? (
-                                availableCameras.map((camera) => (
-                                    <label key={camera.deviceId} className="flex items-center gap-3 p-3 rounded-lg  bg-black/30  cursor-pointer hover:bg-black/20  transition">
-                                        <input
-                                            type="radio"
-                                            name="camera"
-                                            value={camera.deviceId}
-                                            checked={selectedCameraId === camera.deviceId}
-                                            onChange={(e) => setSelectedCameraId(e.target.value)}
-                                            className="w-4 h-4"
-                                        />
-                                        <span className="text-sm text-slate-200">{camera.label}</span>
-                                    </label>
-                                ))
-                            ) : (
-                                <p className="text-sm text-slate-400">ไม่พบกล้องที่ใช้ได้</p>
-                            )}
-                        </div>
+                            {/* Camera Selection with Preview */}
+                            <div className="mb-6 flex gap-6">
+                                <div className="w-1/2 bg-black/60 rounded-lg p-2 flex items-center justify-center">
+                                    <video ref={cameraPreviewRef} className="w-full h-48 object-cover rounded-md bg-black" />
+                                </div>
+
+                                <div className="w-1/2 space-y-2">
+                                    {availableCameras.length > 0 ? (
+                                        availableCameras.map((camera) => (
+                                            <label key={camera.deviceId} className={`flex items-center gap-3 p-3 rounded-lg bg-black/30 cursor-pointer hover:bg-black/20 transition ${selectedCameraId===camera.deviceId? 'ring-2 ring-blue-400':''}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="camera"
+                                                    value={camera.deviceId}
+                                                    checked={selectedCameraId === camera.deviceId}
+                                                    onChange={(e) => setSelectedCameraId(e.target.value)}
+                                                    className="w-4 h-4"
+                                                />
+                                                <span className="text-sm text-slate-200">{camera.label}</span>
+                                            </label>
+                                        ))
+                                    ) : (
+                                        <p className="text-sm text-slate-400">ไม่พบกล้องที่ใช้ได้</p>
+                                    )}
+                                </div>
+                            </div>
 
                         {/* Confirmation Message */}
                         <div className="mb-6 p-3 rounded-lg bg-black/30 ">
@@ -602,7 +650,7 @@ useEffect(() => {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex gap-3">
+                        <div className="flex  gap-3">
                             <button
                                 onClick={() => setShowCameraModal(false)}
                                 className="flex-1 px-4 py-2.5 rounded-lg  bg-gray-700/50 hover:bg-gray-700 text-slate-200 font-semibold text-sm transition"
