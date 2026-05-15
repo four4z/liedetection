@@ -3,18 +3,17 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import datetime, timedelta
 from typing import Optional
 from collections import defaultdict
-from functools import partial
-import asyncio
 import os
 import random
 import string
 import httpx
+import logging
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from bson import ObjectId
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
-from google.oauth2 import id_token as google_id_token
-from google.auth.transport import requests as google_requests
+
+logger = logging.getLogger(__name__)
 
 from app.models.schemas import (
     UserCreate, UserLogin, UserResponse, GoogleAuth, Token, TokenData,
@@ -26,11 +25,12 @@ router = APIRouter()
 security = HTTPBearer()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-SECRET_KEY = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
+SECRET_KEY = os.getenv("JWT_SECRET")
+if not SECRET_KEY:
+    raise RuntimeError("JWT_SECRET is not set in .env")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 OTP_EXPIRE_MINUTES = 10
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
 # Simple in-memory rate limiter (resets on restart)
 _rate_buckets: dict = defaultdict(list)
@@ -46,10 +46,17 @@ def _check_rate_limit(key: str, max_attempts: int = 5, window_minutes: int = 15)
 
 
 def get_mail_config() -> ConnectionConfig:
+    mail_username = os.getenv("MAIL_USERNAME", "")
+    mail_password = os.getenv("MAIL_PASSWORD", "")
+    mail_from = os.getenv("MAIL_FROM", mail_username)
+    
+    if not mail_username or not mail_password:
+        logger.warning("Email credentials not configured. Password reset emails will not be sent.")
+    
     return ConnectionConfig(
-        MAIL_USERNAME=os.getenv("MAIL_USERNAME", ""),
-        MAIL_PASSWORD=os.getenv("MAIL_PASSWORD", ""),
-        MAIL_FROM=os.getenv("MAIL_FROM"),
+        MAIL_USERNAME=mail_username,
+        MAIL_PASSWORD=mail_password,
+        MAIL_FROM=mail_from,
         MAIL_PORT=int(os.getenv("MAIL_PORT", 587)),
         MAIL_SERVER=os.getenv("MAIL_SERVER", "smtp.gmail.com"),
         MAIL_STARTTLS=True,
@@ -77,13 +84,6 @@ def create_access_token(data: dict) -> str:
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def _verify_google_token_sync(credential: str) -> dict:
-    """Runs synchronously — call via run_in_executor to avoid blocking the event loop."""
-    return google_id_token.verify_oauth2_token(
-        credential,
-        google_requests.Request(),
-        GOOGLE_CLIENT_ID
-    )
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
@@ -182,17 +182,19 @@ async def login(login_data: UserLogin):
 
 @router.post("/google", response_model=Token)
 async def google_auth(auth_data: GoogleAuth):
-    """Login/Register with Google — verifies token locally via google-auth library."""
-    if not GOOGLE_CLIENT_ID:
-        raise HTTPException(status_code=500, detail="Google login not configured on server")
-
+    """Login/Register with Google OAuth."""
     try:
-        loop = asyncio.get_event_loop()
-        google_data = await loop.run_in_executor(
-            None, partial(_verify_google_token_sync, auth_data.credential)
-        )
-    except ValueError:
-        raise HTTPException(status_code=401, detail="Invalid Google token")
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"https://oauth2.googleapis.com/tokeninfo?id_token={auth_data.credential}"
+            )
+            if response.status_code != 200:
+                raise HTTPException(status_code=401, detail="Invalid Google token")
+            google_data = response.json()
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=401, detail="Failed to verify Google token")
 
     users = get_users_collection()
     email = google_data.get("email")
@@ -305,14 +307,21 @@ async def forget_password(body: ForgetPasswordRequest):
         {"$set": {"resetOtp": get_password_hash(otp), "resetOtpExpiry": otp_expiry}}
     )
 
-    message = MessageSchema(
-        subject="Your Password Reset OTP",
-        recipients=[body.email],
-        body=f"<h2>Your OTP is: <strong>{otp}</strong></h2><p>Expires in {OTP_EXPIRE_MINUTES} minutes.</p>",
-        subtype="html"
-    )
-    fm = FastMail(get_mail_config())
-    await fm.send_message(message)
+    # Try to send email, but don't crash if credentials are misconfigured
+    try:
+        message = MessageSchema(
+            subject="Your Password Reset OTP",
+            recipients=[body.email],
+            body=f"<h2>Your OTP is: <strong>{otp}</strong></h2><p>Expires in {OTP_EXPIRE_MINUTES} minutes.</p>",
+            subtype="html"
+        )
+        fm = FastMail(get_mail_config())
+        await fm.send_message(message)
+    except Exception as e:
+        logger.error(f"Failed to send OTP email to {body.email}: {str(e)}")
+        # Still return success message to avoid leaking user existence
+        # OTP is stored in DB but email didn't send - user won't receive it
+        
     return {"message": "If that email is registered, an OTP has been sent."}
 
 

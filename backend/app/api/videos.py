@@ -1,7 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from datetime import datetime, timedelta
-from typing import Optional, List, Literal
+import logging
+
+logger = logging.getLogger(__name__)
+
+UTC7 = timedelta(hours=7)
+from typing import Optional, List
 import asyncio
 import json
 import uuid
@@ -30,7 +35,7 @@ def _build_video_response(video: dict) -> VideoResponse:
         video=video.get("video", ""),
         video_url=video["video_url"],
         thumbnail_url=video.get("thumbnail_url"),
-        uploaded_at=video["uploaded_at"],
+        uploaded_at=video["uploaded_at"] + UTC7,
         video_duration=video.get("video_duration"),
         segments=segments,
         summary=summary,
@@ -47,7 +52,7 @@ def _build_list_item(video: dict) -> VideoListItem:
         video=video.get("video", ""),
         video_url=video["video_url"],
         thumbnail_url=video.get("thumbnail_url"),
-        uploaded_at=video["uploaded_at"],
+        uploaded_at=video["uploaded_at"] + UTC7,
         video_duration=video.get("video_duration"),
         summary=summary,
         analysis_status=video.get("analysis_status", "pending"),
@@ -76,28 +81,17 @@ async def _run_analysis(video_id: str) -> None:
 # GET /api/videos/
 # ---------------------------------------------------------------------------
 
-@router.get("/", response_model=PaginatedVideos)
+@router.get("/", response_model=List[VideoListItem])
 async def get_user_videos(
     user_id: str = Depends(get_current_user_id),
     skip: int = 0,
     limit: int = 20,
-    status: Optional[Literal["pending", "processing", "completed", "failed"]] = None,
-    search: Optional[str] = None,
 ):
-    """Paginated video list. Filter by ?status= and/or search by ?search= (video name)."""
+    """Get all videos for the logged-in user."""
     videos = get_videos_collection()
 
-    query: dict = {"user_id": user_id}
-    if status:
-        query["analysis_status"] = status
-    if search:
-        query["video"] = {"$regex": search, "$options": "i"}
-
-    total = await videos.count_documents(query)
-    cursor = videos.find(query, {"segments": 0}).sort("uploaded_at", -1).skip(skip).limit(limit)
-    items = [_build_list_item(v) async for v in cursor]
-
-    return PaginatedVideos(items=items, total=total, skip=skip, limit=limit, has_more=(skip + limit) < total)
+    cursor = videos.find({"user_id": user_id}, {"segments": 0}).sort("uploaded_at", -1).skip(skip).limit(limit)
+    return [_build_list_item(v) async for v in cursor]
 
 
 # ---------------------------------------------------------------------------
@@ -222,26 +216,26 @@ async def delete_video(video_id: str, current_user: dict = Depends(get_current_u
 # GET /api/videos/{video_id}/status  — lightweight polling
 # ---------------------------------------------------------------------------
 
-@router.get("/{video_id}/status", response_model=VideoStatus)
-async def get_video_status(video_id: str):
-    """Return only analysis_status, summary, and error. Cheap to poll."""
-    _require_valid_id(video_id)
-    videos = get_videos_collection()
+# @router.get("/{video_id}/status", response_model=VideoStatus)
+# async def get_video_status(video_id: str):
+#     """Return only analysis_status, summary, and error. Cheap to poll."""
+#     _require_valid_id(video_id)
+#     videos = get_videos_collection()
 
-    video = await videos.find_one(
-        {"_id": ObjectId(video_id)},
-        {"analysis_status": 1, "summary": 1, "analysis_error": 1}
-    )
-    if not video:
-        raise HTTPException(status_code=404, detail="Video not found")
+#     video = await videos.find_one(
+#         {"_id": ObjectId(video_id)},
+#         {"analysis_status": 1, "summary": 1, "analysis_error": 1}
+#     )
+#     if not video:
+#         raise HTTPException(status_code=404, detail="Video not found")
 
-    summary = VideoSummary(**video["summary"]) if video.get("summary") else None
-    return VideoStatus(
-        id=video_id,
-        analysis_status=video.get("analysis_status", "pending"),
-        summary=summary,
-        analysis_error=video.get("analysis_error"),
-    )
+#     summary = VideoSummary(**video["summary"]) if video.get("summary") else None
+#     return VideoStatus(
+#         id=video_id,
+#         analysis_status=video.get("analysis_status", "pending"),
+#         summary=summary,
+#         analysis_error=video.get("analysis_error"),
+#     )
 
 
 # ---------------------------------------------------------------------------
@@ -298,6 +292,7 @@ async def get_video(
 ):
     """Get full video details. User-owned videos require the owner to be logged in."""
     _require_valid_id(video_id)
+    logger.info(f"GET /videos/{video_id} - User: {current_user['_id'] if current_user else 'anonymous'}")
     videos = get_videos_collection()
 
     video = await videos.find_one({"_id": ObjectId(video_id)})
@@ -336,6 +331,7 @@ async def trigger_analysis(
 ):
     """Trigger lie detection analysis on a video."""
     _require_valid_id(video_id)
+    logger.info(f"POST /videos/{video_id}/analyze - User: {current_user['_id'] if current_user else 'anonymous'}")
     videos = get_videos_collection()
 
     video = await videos.find_one({"_id": ObjectId(video_id)})

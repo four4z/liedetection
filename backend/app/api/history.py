@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
+from datetime import timedelta
 from bson import ObjectId
+
+UTC7 = timedelta(hours=7)
 
 from app.models.schemas import HistoryLog
 from app.database.connection import get_history_collection
@@ -41,7 +44,7 @@ async def get_history(
             id=str(doc["_id"]),
             userId=doc["userId"],
             videoId=doc["videoId"],
-            viewedAt=doc["viewedAt"],
+            viewedAt=doc["viewedAt"] + UTC7,
             video=vid.get("video"),
             video_url=vid.get("video_url"),
             thumbnail_url=vid.get("thumbnail_url"),
