@@ -63,7 +63,7 @@ export default function ResetPasswordPage() {
         <div className="flex justify-center items-center min-h-screen">
             <div className="min-h-screen flex items-center justify-center">
                 <div className="w-full max-w-sm bg-dark-custom border border-dark-custom rounded-3xl shadow-lg p-12 text-white">
-                    <Link href="/verifyotp" className="flex items-center mb-6">
+                    <Link href={email ? `/verifyotp?email=${encodeURIComponent(email)}` : "/verifyotp"} className="flex items-center mb-6">
                         <Icon icon="weui:back-outlined" width="12" height="24" />
                     </Link>
 
