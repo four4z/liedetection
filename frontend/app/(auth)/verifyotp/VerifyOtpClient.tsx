@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
+import Image from "next/image";
 import { authApi } from "@/lib/api";
 import { toast } from "sonner";
+import icon from "../../../public/img/ICON.png";
 
 const getErrorMessage = (detail: unknown, fallback: string) => {
     if (typeof detail === "string" && detail.trim()) {
@@ -125,9 +127,13 @@ export default function VerifyOtpClient({ initialEmail }: VerifyOtpClientProps) 
                     </Link>
 
                     <div className="flex justify-center mb-6">
-                        <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                            icon
-                        </div>
+                        <Image
+                            src={icon}
+                            alt="Verify OTP"
+                            width={48}
+                            height={48}
+                            className="rounded-full"
+                        />
                     </div>
 
                     <h2 className="text-2xl font-semibold text-center mb-3">Verify OTP</h2>
