@@ -115,21 +115,21 @@ const normalizeConfidence = (score: number | null | undefined) => {
 };
 
 const extractTimeToken = (input: string) => {
-    // ตัดเอาเฉพาะตัวเลข + : + .
+    // Extract only digits, ':' and '.'
     const cleaned = input.match(/[0-9:.]+/g);
     if (!cleaned) return null;
 
     for (const token of cleaned) {
         const parts = token.split(":");
 
-        // รองรับ H:M หรือ H:M:S
+        // Supports H:M or H:M:S
         if (parts.length === 2 || parts.length === 3) {
             if (parts.every((part) => !Number.isNaN(Number(part)))) {
                 return token;
             }
         }
 
-        // รองรับเลขธรรมดา เช่น 123 หรือ 123.45
+        // Supports plain numbers such as 123 or 123.45
         if (!Number.isNaN(Number(token))) {
             return token;
         }

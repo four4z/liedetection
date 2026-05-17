@@ -158,10 +158,10 @@ function LoginPage() {
             const data = await authApi.login(email, password);
             const meData = await authApi.me(data.access_token);
 
-            // ✅ เก็บ token และ user ใน context
+            // ✅ Store token and user in context
             login(data.access_token, meData);
 
-            // ✅ redirect
+            // ✅ Redirect
             router.push("/");
 
         } catch (err: unknown) {

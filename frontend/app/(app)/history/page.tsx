@@ -114,7 +114,7 @@ export default function HistoryPage() {
             return;
         }
 
-        if (!window.confirm("ยืนยันการล้างประวัติทั้งหมด?")) {
+        if (!window.confirm("Are you sure you want to clear all history?")) {
             return;
         }
 
@@ -134,26 +134,26 @@ export default function HistoryPage() {
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4 ">
                 <div>
                     <h1 className="text-xl sm:text-2xl font-bold text-white">History</h1>
-                    <p className="text-gray-400 text-sm">ประวัติการเปิดวิดีโอของบัญชีนี้</p>
+                    <p className="text-gray-400 text-sm">Viewing history for this account</p>
                 </div>
             </div>
 
             {loading && (
                 <div className="flex justify-center items-center py-12">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
-                    <span className="ml-2 text-white">กำลังโหลด...</span>
+                    <span className="ml-2 text-white">Loading...</span>
                 </div>
             )}
 
             {!loading && error && (
                 <div className="text-center py-12">
                     <Icon icon="mdi:alert-circle" width="44" height="44" className="mx-auto text-red-400 mb-2" />
-                    <p className="text-white">เกิดข้อผิดพลาด: {error}</p>
+                    <p className="text-white">An error occurred: {error}</p>
                     <button
                         onClick={() => loadHistory(0, false)}
                         className="mt-4 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                     >
-                        ลองใหม่
+                        Try again
                     </button>
                 </div>
             )}
@@ -161,15 +161,15 @@ export default function HistoryPage() {
             {!loading && !error && !token && (
                 <div className="text-center py-12">
                     <Icon icon="mdi:account-lock" width="44" height="44" className="mx-auto text-gray-400 mb-2" />
-                    <p className="text-white mb-2">ต้องเข้าสู่ระบบก่อน</p>
-                    <Link href="/Login" className="text-blue-400 hover:underline">ไปหน้าเข้าสู่ระบบ</Link>
+                    <p className="text-white mb-2">Please sign in first</p>
+                    <Link href="/Login" className="text-blue-400 hover:underline">Go to login</Link>
                 </div>
             )}
 
             {!loading && !error && token && logs.length === 0 && (
                 <div className="text-center py-12">
                     <Icon icon="mdi:history" width="44" height="44" className="mx-auto text-gray-400 mb-2" />
-                    <p className="text-white">ยังไม่มีประวัติการดูวิดีโอ</p>
+                    <p className="text-white">No viewing history yet</p>
                 </div>
             )}
 

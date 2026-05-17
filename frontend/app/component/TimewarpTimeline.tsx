@@ -57,17 +57,11 @@ export default function TimewarpTimeline({
     const getPointFilterType = (point: TimeWarpPoint): Exclude<FilterType, "all"> => {
         const normalizedLabel = point.label.trim().toLowerCase();
 
-        if (
-            normalizedLabel.includes("lie") ||
-            normalizedLabel.includes("โกหก")
-        ) {
+        if (normalizedLabel.includes("lie")) {
             return "lie";
         }
 
-        if (
-            normalizedLabel.includes("truth") ||
-            normalizedLabel.includes("จริง")
-        ) {
+        if (normalizedLabel.includes("truth")) {
             return "truth";
         }
 
@@ -166,8 +160,8 @@ export default function TimewarpTimeline({
                         />
                         <p className="text-sm">
                             {activeFilter === "all"
-                                ? "ไม่พบ Timewarp Points"
-                                : "ไม่พบข้อมูลในฟิลเตอร์นี้"}
+                                ? "No Timewarp points found"
+                                : "No data in this filter"}
                         </p>
                     </div>
                 ) : (

@@ -23,7 +23,7 @@ export default function VideoList({
     onVideoClick,
     variant = "grid",
     compact = false,
-    title = "รายการวิดีโอ",
+    title = "Video list",
     showSearch = true,
     showPagination = true,
     hasMore = false,
@@ -42,7 +42,7 @@ export default function VideoList({
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(e.target.value);
-        setCurrentPage(1); // Reset to first page when searching
+        setCurrentPage(1); // Reset to the first page when searching
     };
 
     const filteredVideos = videos.filter(video =>
@@ -127,7 +127,7 @@ export default function VideoList({
         return (
             <div className="flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                <span className="ml-2 text-white">กำลังโหลด...</span>
+                <span className="ml-2 text-white">Loading...</span>
             </div>
         );
     }
@@ -138,12 +138,12 @@ export default function VideoList({
                 <div className="text-red-400 mb-4">
                     <Icon icon="mdi:alert-circle" width="48" height="48" />
                 </div>
-                <p className="text-white">เกิดข้อผิดพลาด: {error}</p>
+                <p className="text-white">An error occurred: {error}</p>
                 <button
                     onClick={fetchVideos}
                     className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                    ลองใหม่
+                    Try again
                 </button>
             </div>
         );
@@ -155,8 +155,8 @@ export default function VideoList({
                 <div className="text-gray-400 mb-4">
                     <Icon icon="mdi:video-off" width="48" height="48" />
                 </div>
-                <p className="text-white text-lg">ยังไม่มีวิดีโอ</p>
-                <p className="text-gray-400">{token ? 'อัปโหลดวิดีโอเพื่อเริ่มการวิเคราะห์' : 'กรุณาเข้าสู่ระบบเพื่อดูรายการวิดีโอของคุณ'}</p>
+                <p className="text-white text-lg">No videos yet</p>
+                <p className="text-gray-400">{token ? 'Upload a video to start analyzing' : 'Please sign in to view your videos'}</p>
             </div>
         );
     }
@@ -172,7 +172,7 @@ export default function VideoList({
                         <div>
                             <input
                                 type="text"
-                                placeholder="ค้นหาวิดีโอ..."
+                                placeholder="Search videos..."
                                 value={searchTerm}
                                 onChange={handleSearch}
                                 className="w-full p-2 text-white rounded-md border border-greay-custom focus:outline-none focus:ring-2 focus:ring-gray-700" />
@@ -183,8 +183,8 @@ export default function VideoList({
                     <div className="text-gray-400 mb-4">
                         <Icon icon="mdi:magnify" width="48" height="48" />
                     </div>
-                    <p className="text-white text-lg">ไม่พบวิดีโอที่ค้นหา</p>
-                    <p className="text-gray-400">ลองค้นหาด้วยคำอื่น</p>
+                    <p className="text-white text-lg">No matching videos found</p>
+                    <p className="text-gray-400">Try a different search term</p>
                 </div>
             </div>
         );
@@ -212,7 +212,7 @@ export default function VideoList({
                 <div>
                     <input
                         type="text"
-                        placeholder="ค้นหาวิดีโอ..."
+                        placeholder="Search videos..."
                         value={searchTerm}
                         onChange={handleSearch}
                         className="w-full p-2 text-white rounded-md border border-greay-custom focus:outline-none focus:ring-2 focus:ring-gray-700" />
@@ -302,8 +302,8 @@ export default function VideoList({
 
             {variant === "stack" && (
                 <div ref={loadMoreRef} className="py-4 text-center">
-                    {isLoadingMore && <span className="text-sm text-gray-400">กำลังโหลดเพิ่ม...</span>}
-                    {!hasMore && paginatedVideos.length > 0 && <span className="text-sm text-gray-500">แสดงครบทั้งหมดแล้ว</span>}
+                    {isLoadingMore && <span className="text-sm text-gray-400">Loading more...</span>}
+                    {!hasMore && paginatedVideos.length > 0 && <span className="text-sm text-gray-500">You've reached the end</span>}
                 </div>
             )}
 

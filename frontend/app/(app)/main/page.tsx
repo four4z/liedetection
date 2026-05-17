@@ -46,7 +46,7 @@ export default function Main() {
         const allowedTypes = ["video/mp4", "video/webm", "video/quicktime"];
 
         if (!allowedTypes.includes(selectedFile.type)) {
-            toast.error("รองรับเฉพาะไฟล์วิดีโอ (.mp4, .webm, .mov) เท่านั้น");
+            toast.error("Only video files (.mp4, .webm, .mov) are supported.");
             return;
         }
 
@@ -138,7 +138,7 @@ const handleDeleteVideo = () => {
             await videosApi.triggerAnalysis(backendData.id, token);
 
             // console.log("Video submission successful:", backendData);
-            toast.success("วิดีโอถูกส่งและเริ่มวิเคราะห์แล้ว");
+            toast.success("Video uploaded and analysis started.");
 
             // clean up local resources and navigate to the new video's detail page
             handleDeleteVideo();
@@ -146,7 +146,7 @@ const handleDeleteVideo = () => {
             
         } catch (error) {
             console.error("Error analyzing video:", error);
-            toast.error(`เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : "Unknown error"}`);
+            toast.error(`An error occurred: ${error instanceof Error ? error.message : "Unknown error"}`);
         } finally {
             setIsAnalyzing(false);
         }
@@ -158,7 +158,7 @@ const handleDeleteVideo = () => {
             const videoDevices = devices.filter(device => device.kind === 'videoinput');
             
             if (videoDevices.length === 0) {
-                toast.error("ไม่พบกล้องบนอุปกรณ์นี้");
+                toast.error("No camera found on this device.");
                 return;
             }
 
@@ -172,7 +172,7 @@ const handleDeleteVideo = () => {
             setShowCameraModal(true);
         } catch (error) {
             console.error("Error enumerating cameras:", error);
-            toast.error("ไม่สามารถค้นหากล้องได้");
+            toast.error("Unable to detect the camera.");
         }
     };
 
@@ -343,7 +343,7 @@ const handleDeleteVideo = () => {
 
         } catch (error) {
             console.error(error);
-            toast.error("ไม่สามารถเข้าถึงกล้องได้");
+            toast.error("Unable to access the camera.");
         }
     };
 
@@ -468,7 +468,7 @@ useEffect(() => {
                                 </div>
                                 <div className="text-center">
                                     <p className="text-xl font-semibold text-slate-100">Recording...</p>
-                                    <p className="mt-1 text-sm text-slate-400">กดปุ่มวงกลมเพื่อหยุดอัด</p>
+                                    <p className="mt-1 text-sm text-slate-400">Press the round button to stop recording.</p>
                                     
                                     {/* Microphone Audio Indicator */}
                                     <div className="mt-6 flex flex-col items-center gap-3">
@@ -492,7 +492,7 @@ useEffect(() => {
                                                 className={audioLevel > 20 ? "text-green-400" : "text-slate-400"}
                                             />
                                             <span className="text-xs font-medium text-slate-300">
-                                                {audioLevel > 20 ? "เสียงที่ตรวจพบ" : "รอเสียง..."}
+                                                {audioLevel > 20 ? "Sound detected" : "Waiting for sound..."}
                                             </span>
                                         </div>
                                     </div>
@@ -559,7 +559,7 @@ useEffect(() => {
                             {/* Status Strip */}
                             <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-900/50 border border-slate-700/30">
                                 <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
-                                <p className="text-xs text-slate-400 ">ไฟล์วิดีโอ mp4, webm, mov</p>
+                                <p className="text-xs text-slate-400 ">Video file: mp4, webm, mov</p>
                                 <span className="ml-auto text-xs text-slate-500 font-mono">
                                     {file ? (file.size / (1024 * 1024)).toFixed(2) + " MB" : "—"}
                                 </span>
@@ -573,7 +573,7 @@ useEffect(() => {
                                         type="text"
                                         value={videoTitle}
                                         onChange={(e) => setVideoTitle(e.target.value)}
-                                        placeholder="ตั้งชื่อวิดีโอก่อนส่งออก"
+                                        placeholder="Name your video before submitting"
                                         className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-2.5 text-white placeholder:text-slate-500 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 outline-none transition"
                                     />
                                 </div>
@@ -586,7 +586,7 @@ useEffect(() => {
                                             className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm transition disabled:cursor-not-allowed disabled:bg-gray-600"
                                         >
                                             <Icon icon="mdi:check-circle-outline" width="16" height="16" />
-                                            {isAnalyzing ? "กำลังประมวลผล..." : "ตกลง"}
+                                            {isAnalyzing ? "Processing..." : "Confirm"}
                                         </button>
                                         <button
                                             onClick={handleDeleteVideo}
@@ -594,7 +594,7 @@ useEffect(() => {
                                             className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-sm transition disabled:cursor-not-allowed disabled:bg-gray-600"
                                         >
                                             <Icon icon="mdi:close-circle-outline" width="16" height="16" />
-                                            ยกเลิก
+                                            Cancel
                                         </button>
                                     </div>
                                 </div>
@@ -610,8 +610,8 @@ useEffect(() => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                     <div className="rounded-2xl  bg-greay-custom p-6 shadow-2xl max-w-3xl w-full mx-4">
                         <div className="mb-6">
-                            <h2 className="text-xl font-bold text-white mb-2">เลือกกล้อง</h2>
-                            <p className="text-sm text-slate-400">เลือกกล้องที่คุณต้องการใช้ในการบันทึก</p>
+                            <h2 className="text-xl font-bold text-white mb-2">Choose a camera</h2>
+                            <p className="text-sm text-slate-400">Select the camera you want to use for recording</p>
                         </div>
 
                             {/* Camera Selection with Preview */}
@@ -636,7 +636,7 @@ useEffect(() => {
                                             </label>
                                         ))
                                     ) : (
-                                        <p className="text-sm text-slate-400">ไม่พบกล้องที่ใช้ได้</p>
+                                        <p className="text-sm text-slate-400">No available cameras found</p>
                                     )}
                                 </div>
                             </div>
@@ -645,7 +645,7 @@ useEffect(() => {
                         <div className="mb-6 p-3 rounded-lg bg-black/30 ">
                             <p className="text-xs text-slate-300">
                                 <Icon icon="mdi:information-outline" className="inline mr-2" width="16" height="16" />
-                                เมื่อคุณคลิก "เริ่มบันทึก" การบันทึกวิดีโอจะเริ่มต้นขึ้น
+                                Clicking "Start recording" will begin video capture.
                             </p>
                         </div>
 
@@ -655,7 +655,7 @@ useEffect(() => {
                                 onClick={() => setShowCameraModal(false)}
                                 className="flex-1 px-4 py-2.5 rounded-lg  bg-gray-700/50 hover:bg-gray-700 text-slate-200 font-semibold text-sm transition"
                             >
-                                ยกเลิก
+                                Cancel
                             </button>
                             <button
                                 onClick={() => startRecording(selectedCameraId)}
@@ -663,7 +663,7 @@ useEffect(() => {
                                 className="flex-1 px-4 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm transition disabled:bg-gray-600 disabled:cursor-not-allowed"
                             >
                                 <Icon icon="mdi:record-circle" className="inline mr-2" width="16" height="16" />
-                                เริ่มบันทึก
+                                Start recording
                             </button>
                         </div>
                     </div>

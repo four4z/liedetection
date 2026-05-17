@@ -74,10 +74,10 @@ function RegisterPage() {
             const data = await authApi.register(email, username, password);
             const meData = await authApi.me(data.access_token);
 
-            // ✅ เก็บ token และ user ใน context
+            // ✅ Store token and user in context
             login(data.access_token, meData);
 
-            // ✅ redirect
+            // ✅ Redirect
             router.push("/");
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : getErrorMessage(null, "Register failed");
